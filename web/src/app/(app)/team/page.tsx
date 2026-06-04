@@ -39,15 +39,15 @@ export default function TeamPage() {
           <div>
             <span className="chip"><Users className="h-3 w-3" /> 3-level referral team</span>
             <h1 className="mt-2 font-display text-3xl sm:text-4xl font-semibold tracking-tight">
-              Apni <span className="text-gradient-neon">team</span> banaiye
+              Build your <span className="text-gradient-neon">team</span>
             </h1>
             <p className="mt-2 max-w-xl text-sm text-white/60">
-              Apne dosto ko invite karein. L1 se 10%, L2 se 5%, L3 se 2% commission — hamesha ke liye.
+              Invite your friends. Earn 10% from L1, 5% from L2, 2% from L3 — for life.
             </p>
           </div>
           <div className="space-y-3">
             <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-white/50">Apka referral link</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-white/50">Your referral link</p>
               <div className="mt-2 flex items-center gap-2 rounded-xl bg-black/20 border border-white/[0.06] p-2 pl-4">
                 <span className="flex-1 text-sm font-mono text-white/80 truncate">adverse.live/r/AR0US71</span>
                 <Button size="sm" variant="glass"><Copy className="h-3.5 w-3.5" /> Copy</Button>
@@ -60,7 +60,7 @@ export default function TeamPage() {
                 <p className="mt-1 font-mono text-lg font-semibold tracking-widest">AR0US71</p>
               </div>
               <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-white/50">Har naye signup par</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-white/50">Per new signup</p>
                 <p className="mt-1 font-display text-lg font-semibold">₨ 25</p>
               </div>
             </div>
@@ -69,9 +69,9 @@ export default function TeamPage() {
       </GlassCard>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="L1 dost" value={24} icon={<Users className="h-4 w-4" />} accent="cyan" delta={6.4} />
-        <StatCard label="L2 dost" value={58} icon={<Users className="h-4 w-4" />} accent="violet" delta={12.1} />
-        <StatCard label="L3 dost" value={142} icon={<Users className="h-4 w-4" />} accent="emerald" delta={4.8} />
+        <StatCard label="L1 friends" value={24} icon={<Users className="h-4 w-4" />} accent="cyan" delta={6.4} />
+        <StatCard label="L2 friends" value={58} icon={<Users className="h-4 w-4" />} accent="violet" delta={12.1} />
+        <StatCard label="L3 friends" value={142} icon={<Users className="h-4 w-4" />} accent="emerald" delta={4.8} />
         <StatCard label="Team commission" value={28640} prefix="₨ " icon={<TrendingUp className="h-4 w-4" />} accent="amber" delta={9.7} />
       </div>
 
@@ -104,9 +104,9 @@ export default function TeamPage() {
           <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Team activity</p>
           <ul className="mt-3 space-y-2.5">
             {[
-              { i: <UserPlus className="h-3.5 w-3.5 text-cyan-300" />, t: "Sara apke link se join hui", d: "2m ago" },
-              { i: <TrendingUp className="h-3.5 w-3.5 text-emerald-300" />, t: "Hassan ka quiz reward + commission", d: "12m ago" },
-              { i: <MessageSquare className="h-3.5 w-3.5 text-violet-300" />, t: "Maya ne pehla room host kiya", d: "32m ago" },
+              { i: <UserPlus className="h-3.5 w-3.5 text-cyan-300" />, t: "Sara joined using your link", d: "2m ago" },
+              { i: <TrendingUp className="h-3.5 w-3.5 text-emerald-300" />, t: "Hassan's quiz reward + commission", d: "12m ago" },
+              { i: <MessageSquare className="h-3.5 w-3.5 text-violet-300" />, t: "Maya hosted her first room", d: "32m ago" },
               { i: <UserPlus className="h-3.5 w-3.5 text-cyan-300" />, t: "Reema joined via Aroush (L2)", d: "1h ago" },
             ].map((row, i) => (
               <li key={i} className="flex items-start gap-3">
@@ -123,7 +123,7 @@ export default function TeamPage() {
 
       <GlassCard className="p-5">
         <div className="flex items-center justify-between">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Apki team</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Your team</p>
           <Button size="sm" variant="glass">Export CSV</Button>
         </div>
 

@@ -2,19 +2,19 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
-import { Flame, Gift, HelpCircle, Lock, MessageSquare, Mic, Sparkles, Trophy, Users } from "lucide-react";
+import { Flame, Gift, HelpCircle, Lock, MessageSquare, Trophy, UserPlus, Users } from "lucide-react";
 
 const DAILY = [
-  { i: <HelpCircle className="h-4 w-4" />, t: "Aaj ka quiz solve karein", p: 0, m: 1, r: "₨ 30 + 20 XP" },
-  { i: <Users className="h-4 w-4" />, t: "Aik dost invite karein", p: 0, m: 1, r: "₨ 25 + 50 XP" },
-  { i: <Mic className="h-4 w-4" />, t: "Voice room mein 10 min", p: 1, m: 1, r: "30 XP" },
-  { i: <MessageSquare className="h-4 w-4" />, t: "3 dosto ko message karein", p: 2, m: 3, r: "15 XP" },
+  { i: <HelpCircle className="h-4 w-4" />, t: "Solve today's quiz", p: 0, m: 1, r: "₨ 30 + 20 XP" },
+  { i: <Users className="h-4 w-4" />, t: "Invite a friend", p: 0, m: 1, r: "₨ 25 + 50 XP" },
+  { i: <UserPlus className="h-4 w-4" />, t: "Add a new friend", p: 0, m: 1, r: "10 XP" },
+  { i: <MessageSquare className="h-4 w-4" />, t: "Message 3 friends", p: 2, m: 3, r: "15 XP" },
 ];
 
 const WEEKLY = [
-  { i: <Trophy className="h-4 w-4" />, t: "7-din ka streak", p: 5, m: 7, r: "₨ 200 + Streak chest" },
-  { i: <Mic className="h-4 w-4" />, t: "Apne 2 voice rooms host karein", p: 1, m: 2, r: "₨ 150 + Host badge" },
-  { i: <Users className="h-4 w-4" />, t: "5 dosto ko team mein lekar aaiye", p: 2, m: 5, r: "₨ 250 + 500 XP" },
+  { i: <Trophy className="h-4 w-4" />, t: "7-day streak", p: 5, m: 7, r: "₨ 200 + Streak chest" },
+  { i: <Users className="h-4 w-4" />, t: "Bring 5 friends to your team", p: 2, m: 5, r: "₨ 250 + 500 XP" },
+  { i: <HelpCircle className="h-4 w-4" />, t: "Solve 5 quizzes correctly", p: 3, m: 5, r: "₨ 100 + 100 XP" },
 ];
 
 const CHESTS = [
@@ -32,16 +32,16 @@ export default function MissionsPage() {
         <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-violet-500/30 blur-3xl" />
         <div className="relative grid gap-6 lg:grid-cols-[1fr_1fr] lg:items-center">
           <div>
-            <span className="chip"><Flame className="h-3 w-3 text-amber-300" /> 7-din ka streak</span>
+            <span className="chip"><Flame className="h-3 w-3 text-amber-300" /> 7-day streak</span>
             <h1 className="mt-2 font-display text-3xl sm:text-4xl font-semibold tracking-tight">
-              XP kamao. Level barhao. <span className="text-gradient-neon">Chest jeeto.</span>
+              Earn XP. Level up. <span className="text-gradient-neon">Win chests.</span>
             </h1>
-            <p className="mt-2 max-w-xl text-sm text-white/60">Daily aur weekly missions, streak bonus, aur chest unlocks. Apke level barhne ke liye.</p>
+            <p className="mt-2 max-w-xl text-sm text-white/60">Daily and weekly missions, streak bonuses, and chest unlocks — designed to grow your level.</p>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <Stat k="Level" v="1" />
             <Stat k="XP" v="0 / 200" />
-            <Stat k="Streak" v="0 din" />
+            <Stat k="Streak" v="0 days" />
           </div>
         </div>
         <div className="relative mt-5 h-2 w-full rounded-full bg-white/[0.06] overflow-hidden">
@@ -52,13 +52,13 @@ export default function MissionsPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <GlassCard className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Aaj ke missions</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Today's missions</p>
           <ul className="mt-3 space-y-2">
             {DAILY.map((d) => <Mission key={d.t} {...d} />)}
           </ul>
         </GlassCard>
         <GlassCard className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Hafte ke missions</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Weekly missions</p>
           <ul className="mt-3 space-y-2">
             {WEEKLY.map((d) => <Mission key={d.t} {...d} />)}
           </ul>

@@ -25,10 +25,9 @@ import { useAuth, useQuiz } from "@/lib/store";
 import { PK_CITIES } from "@/lib/pk";
 import { formatPKR } from "@/lib/utils";
 import { toast } from "sonner";
-import { api } from "@/lib/api-client";
 
 const LEVELS = [
-  { lvl: 1, name: "Naya Saathi", color: "from-slate-500 to-slate-700" },
+  { lvl: 1, name: "New Member", color: "from-slate-500 to-slate-700" },
   { lvl: 5, name: "Active Member", color: "from-cyan-400 to-blue-500" },
   { lvl: 10, name: "Star User", color: "from-violet-500 to-fuchsia-500" },
   { lvl: 20, name: "Pro Host", color: "from-pink-500 to-rose-500" },
@@ -38,6 +37,7 @@ const LEVELS = [
 export default function ProfilePage() {
   const user = useAuth((s) => s.user);
   const update = useAuth((s) => s.update);
+  const saveProfile = useAuth((s) => s.saveProfile);
   const attempts = useQuiz((s) => s.attempts);
 
   const [editing, setEditing] = useState(false);
@@ -64,7 +64,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <GlassCard className="p-8 text-center">
-        <p className="font-display text-xl">Pehle sign in karein</p>
+        <p className="font-display text-xl">Please sign in first</p>
         <Link href="/login" className="mt-4 inline-block">
           <Button variant="neon">Sign in</Button>
         </Link>
@@ -78,26 +78,23 @@ export default function ProfilePage() {
   });
 
   const onSave = async () => {
-    if (form.fullName.trim().length < 2) return toast.error("Naam likhein.");
-    if (!/^[a-z0-9_]{3,20}$/i.test(form.username)) return toast.error("Username 3-20 chars, sirf letters/numbers/underscore.");
-    // Optimistic local update for snappy UX
+    if (form.fullName.trim().length < 2) return toast.error("Enter your name.");
+    if (!/^[a-z0-9_]{3,20}$/i.test(form.username))
+      return toast.error("Username: 3-20 letters, numbers, or underscore.");
     update({
       fullName: form.fullName,
       gender: form.gender as "male" | "female",
       city: form.city,
     });
-    const res = await api("/api/users/me", {
-      method: "PATCH",
-      json: {
-        fullName: form.fullName,
-        city: form.city,
-      },
+    const res = await saveProfile({
+      fullName: form.fullName,
+      city: form.city,
     });
     setEditing(false);
     if (!res.ok) {
-      toast.error("Save nahi hua", { description: res.error.message });
+      toast.error("Couldn't save", { description: res.error });
     } else {
-      toast.success("Profile update ho gayi.");
+      toast.success("Profile updated.");
     }
   };
 
@@ -154,7 +151,7 @@ export default function ProfilePage() {
               />
             </div>
             <p className="mt-2 text-[11px] text-white/55">
-              Daily quiz, voice rooms, dosti aur invites se XP barhta hai. Har 200 XP par naya level.
+              Earn XP from daily quiz, friends and invites. Every 200 XP unlocks a new level.
             </p>
           </div>
         </div>
@@ -163,7 +160,7 @@ export default function ProfilePage() {
       {/* Stats */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={<Coins className="h-4 w-4 text-amber-300" />} label="Wallet" value={formatPKR(user.balance)} />
-        <Stat icon={<TrendingUp className="h-4 w-4 text-emerald-300" />} label="Total kamai" value={formatPKR(user.totalEarned)} />
+        <Stat icon={<TrendingUp className="h-4 w-4 text-emerald-300" />} label="Total earned" value={formatPKR(user.totalEarned)} />
         <Stat icon={<Trophy className="h-4 w-4 text-violet-300" />} label="Quiz wins" value={correctQuizzes.toString()} />
         <Stat icon={<Users className="h-4 w-4 text-cyan-300" />} label="Referral code" value={user.referralCode} />
       </div>
@@ -171,15 +168,13 @@ export default function ProfilePage() {
       {/* Activity / How to level up */}
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <GlassCard className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Level kaise barhta hai?</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">How to level up</p>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {[
-              { k: "Daily quiz solve", v: "+ 20 XP", c: "from-amber-400 to-orange-500" },
-              { k: "Voice room mein 10 min", v: "+ 30 XP", c: "from-cyan-400 to-blue-500" },
-              { k: "Friend invite karein", v: "+ 50 XP", c: "from-violet-500 to-fuchsia-500" },
-              { k: "Apna room host karein", v: "+ 40 XP", c: "from-pink-500 to-rose-500" },
-              { k: "Dost se message karein", v: "+ 5 XP", c: "from-emerald-400 to-teal-500" },
-              { k: "7-din streak", v: "+ 100 XP", c: "from-yellow-400 to-amber-500" },
+              { k: "Solve a daily quiz", v: "+ 20 XP", c: "from-amber-400 to-orange-500" },
+              { k: "Invite a friend", v: "+ 50 XP", c: "from-violet-500 to-fuchsia-500" },
+              { k: "Send a message", v: "+ 5 XP", c: "from-emerald-400 to-teal-500" },
+              { k: "7-day streak", v: "+ 100 XP", c: "from-yellow-400 to-amber-500" },
             ].map((x) => (
               <li key={x.k} className="flex items-center justify-between rounded-xl bg-white/[0.04] border border-white/[0.06] p-3">
                 <div className="flex items-center gap-2.5">
@@ -196,19 +191,19 @@ export default function ProfilePage() {
           <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Achievements</p>
           <ul className="mt-3 space-y-2">
             {[
-              { name: "Pehla Quiz", earned: correctQuizzes >= 1 },
+              { name: "First Quiz", earned: correctQuizzes >= 1 },
               { name: "5 Quiz Wins", earned: correctQuizzes >= 5 },
               { name: "10 Friends", earned: false },
-              { name: "Pehla Voice Room", earned: false },
-              { name: "Level 5 par pohcha", earned: user.level >= 5 },
-              { name: "PKR 1,000 kamai", earned: user.totalEarned >= 1000 },
+              { name: "Reached Level 5", earned: user.level >= 5 },
+              { name: "Earned ₨ 1,000", earned: user.totalEarned >= 1000 },
+              { name: "30-day streak", earned: (user.streak ?? 0) >= 30 },
             ].map((a) => (
               <li key={a.name} className={`flex items-center justify-between rounded-xl px-3 py-2 ${a.earned ? "bg-gradient-to-r from-emerald-500/10 to-cyan-400/5 border border-emerald-500/20" : "bg-white/[0.03] border border-white/[0.06] opacity-60"}`}>
                 <span className="text-sm flex items-center gap-2">
                   <Trophy className={`h-3.5 w-3.5 ${a.earned ? "text-amber-300" : "text-white/30"}`} />
                   {a.name}
                 </span>
-                {a.earned ? <Badge variant="success">Mil gaya</Badge> : <Badge variant="default">Locked</Badge>}
+                {a.earned ? <Badge variant="success">Earned</Badge> : <Badge variant="default">Locked</Badge>}
               </li>
             ))}
           </ul>
@@ -236,12 +231,12 @@ export default function ProfilePage() {
                 <button onClick={() => setEditing(false)} className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/[0.06] hover:bg-white/[0.12] flex items-center justify-center">
                   <X className="h-4 w-4" />
                 </button>
-                <h2 className="font-display text-xl font-semibold">Profile edit karein</h2>
-                <p className="text-xs text-white/55 mt-1">Apni info update karein.</p>
+                <h2 className="font-display text-xl font-semibold">Edit profile</h2>
+                <p className="text-xs text-white/55 mt-1">Update your information.</p>
 
                 <div className="mt-5 space-y-3">
                   <Input
-                    label="Poora naam"
+                    label="Full name"
                     value={form.fullName}
                     onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
                   />
@@ -261,7 +256,7 @@ export default function ProfilePage() {
                       ]}
                     />
                     <Select
-                      label="Sheher"
+                      label="City"
                       value={form.city}
                       onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
                       options={PK_CITIES.map((c) => ({ value: c, label: c }))}

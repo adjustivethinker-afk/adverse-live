@@ -44,25 +44,25 @@ body {
 
 @layer components {
   .glass {
-    background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
     border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     box-shadow:
-      0 1px 0 0 rgba(255,255,255,0.08) inset,
-      0 24px 48px -12px rgba(0,0,0,0.6);
+      0 1px 0 0 rgba(255,255,255,0.06) inset,
+      0 12px 24px -12px rgba(0,0,0,0.5);
   }
   .glass-strong {
-    background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
-    border: 1px solid rgba(255,255,255,0.12);
-    backdrop-filter: blur(32px) saturate(200%);
-    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+    border: 1px solid rgba(255,255,255,0.10);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
   .glass-soft {
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.06);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .liquid-border {
@@ -193,7 +193,7 @@ body {
   .perspective-1200 { perspective: 1200px; }
 }
 
-/* Aurora layer used app-wide */
+/* Aurora layer — static (no animation) for performance */
 .aurora-bg {
   position: fixed; inset: 0; z-index: 0;
   overflow: hidden;
@@ -203,24 +203,18 @@ body {
   content: "";
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.55;
-  animation: aurora 18s ease-in-out infinite;
+  filter: blur(80px);
+  opacity: 0.4;
 }
 .aurora-bg::before {
-  width: 60vmax; height: 60vmax;
-  background: radial-gradient(circle at 30% 30%, rgba(0,229,255,0.55), transparent 60%);
-  top: -20vmax; left: -10vmax;
+  width: 50vmax; height: 50vmax;
+  background: radial-gradient(circle at 30% 30%, rgba(0,229,255,0.4), transparent 65%);
+  top: -15vmax; left: -10vmax;
 }
 .aurora-bg::after {
-  width: 70vmax; height: 70vmax;
-  background: radial-gradient(circle at 70% 60%, rgba(139,92,246,0.55), transparent 60%);
-  bottom: -25vmax; right: -15vmax;
-  animation-delay: -6s;
-}
-@keyframes aurora {
-  0%,100% { transform: translate3d(0,0,0) scale(1); }
-  50% { transform: translate3d(2%,-3%,0) scale(1.06); }
+  width: 55vmax; height: 55vmax;
+  background: radial-gradient(circle at 70% 60%, rgba(139,92,246,0.4), transparent 65%);
+  bottom: -20vmax; right: -15vmax;
 }
 
 /* Reduced motion */

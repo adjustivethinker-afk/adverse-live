@@ -10,27 +10,26 @@ const siteUrl =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "AdVerse Live — Kamao. Bolo. Apne logon se milo.",
+    default: "AdVerse Live — Earn. Connect. Grow.",
     template: "%s · AdVerse Live",
   },
   description:
-    "Pakistan ki pehli premium earning + live voice rooms app. Roz aik aasaan quiz solve karein, 3-level referral team banayein, live voice rooms host karein, aur naye dost banayein.",
+    "Pakistan's simple earning app. Solve a daily quiz, build a 3-level referral team, chat with friends, and earn halal income.",
   keywords: [
     "AdVerse Live",
     "earning app Pakistan",
     "daily quiz reward",
-    "voice rooms",
     "referral team",
     "Pakistan earning",
-    "live audio chat",
+    "halal earning",
   ],
   applicationName: "AdVerse Live",
   authors: [{ name: "AdVerse Live" }],
   category: "social",
   openGraph: {
-    title: "AdVerse Live — Kamao. Bolo. Apne logon se milo.",
+    title: "AdVerse Live — Earn. Connect. Grow.",
     description:
-      "Roz aik quiz, 3-level referral team, live voice rooms aur personal chat — Pakistan ke liye banayi gayi premium app.",
+      "Daily quiz reward, 3-level referral team, and personal chat — built for Pakistani users.",
     type: "website",
     locale: "en_PK",
     siteName: "AdVerse Live",
@@ -39,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "AdVerse Live",
     description:
-      "Roz aik quiz, 3-level referral team aur live voice rooms — Pakistan ke liye banayi gayi premium app.",
+      "Daily quiz, 3-level referral team — Pakistan's simple earning app.",
   },
   robots: {
     index: true,

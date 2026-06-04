@@ -1,0 +1,79 @@
+# AdVerse Live — static export on Apache (Hostinger shared hosting)
+# Drop this file inside public_html together with the rest of the build.
+
+Options -Indexes
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Never rewrite anything inside the Next.js asset folder.
+  # This is critical — without this rule Hostinger returns
+  # the home page HTML for /_next/static/*.js requests, which
+  # breaks every script and stylesheet.
+  RewriteRule ^_next/.*$ - [L]
+  RewriteRule \.(js|css|map|svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|otf|eot)$ - [L]
+
+  # If the request maps to a real file or folder, serve it as-is.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Try the same path with .html appended (Next export emits
+  # /login.html, /signup.html alongside /login/index.html).
+  RewriteCond %{REQUEST_FILENAME}.html -f
+  RewriteRule ^(.*)$ $1.html [L]
+
+  # Fall back to the SPA's 404 page for unknown URLs.
+  ErrorDocument 404 /404.html
+</IfModule>
+
+# Correct MIME types — some shared hosts mis-serve .js / .css.
+<IfModule mod_mime.c>
+  AddType text/css .css
+  AddType application/javascript .js
+  AddType application/json .json
+  AddType image/svg+xml .svg
+  AddType font/woff2 .woff2
+  AddType font/woff .woff
+</IfModule>
+
+# Compression
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript
+  AddOutputFilterByType DEFLATE application/javascript application/json
+  AddOutputFilterByType DEFLATE application/xml image/svg+xml
+</IfModule>
+
+# Long cache for hashed assets (Next.js fingerprints filenames).
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+</IfModule>
+
+ServerSignature Off
+
+# ─────────────────────────────────────────────────────────────────────
+# OPTIONAL: After you enable SSL in hPanel → Security → SSL, uncomment
+# the block below to force HTTPS. Do NOT enable it before SSL is
+# active or every asset request will fail.
+# ─────────────────────────────────────────────────────────────────────
+# <IfModule mod_rewrite.c>
+#   RewriteCond %{HTTPS} !=on
+#   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# </IfModule>

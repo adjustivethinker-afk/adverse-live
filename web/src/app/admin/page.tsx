@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { StatCard } from "@/components/ui/stat";
-import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, BarChart3, Coins, HelpCircle, Mic, Shield, ShieldCheck, Users } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, BarChart3, Coins, HelpCircle, Shield, ShieldCheck, Users } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Bar, BarChart } from "recharts";
 
 const revenue = Array.from({ length: 30 }).map((_, i) => ({ d: i, v: Math.round(8200 + Math.sin(i / 3) * 1800 + i * 280 + Math.random() * 600) }));
@@ -22,20 +22,20 @@ export default function SuperAdmin() {
             <h1 className="mt-2 font-display text-3xl sm:text-4xl font-semibold tracking-tight">
               System status: <span className="text-emerald-300">All systems normal</span>
             </h1>
-            <p className="mt-1 text-sm text-white/60">Realtime metrics across users, voice, money, and trust.</p>
+            <p className="mt-1 text-sm text-white/60">Realtime metrics across users, money, and trust.</p>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="success" pulse>API · 99.99% · 42ms</Badge>
-            <Badge variant="success" pulse>Voice · stable</Badge>
+            <Badge variant="success" pulse>DB · healthy</Badge>
           </div>
         </div>
       </GlassCard>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total users" value={120480} icon={<Users className="h-4 w-4" />} accent="cyan" delta={4.2} />
-        <StatCard label="Live rooms" value={428} icon={<Mic className="h-4 w-4" />} accent="violet" delta={12.8} />
         <StatCard label="Today's revenue" value={42810} prefix="₨ " icon={<Coins className="h-4 w-4" />} accent="emerald" delta={9.6} />
         <StatCard label="Open tickets" value={28} icon={<AlertTriangle className="h-4 w-4" />} accent="amber" delta={-12.5} />
+        <StatCard label="Active today" value={5840} icon={<Users className="h-4 w-4" />} accent="violet" delta={3.1} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

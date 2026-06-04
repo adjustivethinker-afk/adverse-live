@@ -12,7 +12,7 @@ import {
   Search,
   Users,
   Wallet,
-  Mic,
+  Gift,
   Trophy,
 } from "lucide-react";
 import { useState } from "react";
@@ -35,26 +35,26 @@ type Tx = {
 };
 
 const TX: Tx[] = [
-  { id: "T-90123", kind: "quiz", title: "Daily quiz reward", amount: 30, status: "completed", date: "Aaj · 6:42 PM" },
-  { id: "T-90122", kind: "ref", title: "Referral · L1 Sara", amount: 124, status: "completed", date: "Aaj · 6:18 PM" },
-  { id: "T-90121", kind: "gift", title: "Voice room tohfa · Karachi Walay", amount: 45, status: "completed", date: "Aaj · 5:01 PM" },
-  { id: "T-90120", kind: "withdraw", title: "Withdraw · JazzCash", amount: -2000, status: "completed", date: "Aaj · 4:33 PM" },
-  { id: "T-90119", kind: "bonus", title: "Streak bonus · 7 din", amount: 80, status: "completed", date: "Aaj · 12:00 AM" },
-  { id: "T-90118", kind: "deposit", title: "Deposit · EasyPaisa", amount: 5000, status: "pending", date: "Kal · 11:14 PM" },
-  { id: "T-90117", kind: "quiz", title: "Daily quiz reward", amount: 30, status: "completed", date: "Kal · 9:30 PM" },
-  { id: "T-90116", kind: "ref", title: "Referral · L2 Bilal", amount: 62, status: "completed", date: "Kal · 8:11 PM" },
+  { id: "T-90123", kind: "quiz", title: "Daily quiz reward", amount: 30, status: "completed", date: "Today · 6:42 PM" },
+  { id: "T-90122", kind: "ref", title: "Referral · L1 Sara", amount: 124, status: "completed", date: "Today · 6:18 PM" },
+  { id: "T-90121", kind: "bonus", title: "Welcome bonus", amount: 10, status: "completed", date: "Today · 5:01 PM" },
+  { id: "T-90120", kind: "withdraw", title: "Withdraw · JazzCash", amount: -2000, status: "completed", date: "Today · 4:33 PM" },
+  { id: "T-90119", kind: "bonus", title: "Streak bonus · 7 days", amount: 80, status: "completed", date: "Today · 12:00 AM" },
+  { id: "T-90118", kind: "deposit", title: "Deposit · EasyPaisa", amount: 5000, status: "pending", date: "Yesterday · 11:14 PM" },
+  { id: "T-90117", kind: "quiz", title: "Daily quiz reward", amount: 30, status: "completed", date: "Yesterday · 9:30 PM" },
+  { id: "T-90116", kind: "ref", title: "Referral · L2 Bilal", amount: 62, status: "completed", date: "Yesterday · 8:11 PM" },
 ];
 
-const TABS = ["Sab", "Quiz", "Referral", "Tohfey", "Deposit", "Withdraw", "Bonus"];
+const TABS = ["All", "Quiz", "Referral", "Gifts", "Deposit", "Withdraw", "Bonus"];
 
 export default function WalletPage() {
-  const [tab, setTab] = useState("Sab");
+  const [tab, setTab] = useState("All");
 
   const filtered = TX.filter((t) => {
-    if (tab === "Sab") return true;
+    if (tab === "All") return true;
     if (tab === "Quiz") return t.kind === "quiz";
     if (tab === "Referral") return t.kind === "ref";
-    if (tab === "Tohfey") return t.kind === "gift";
+    if (tab === "Gifts") return t.kind === "gift";
     if (tab === "Deposit") return t.kind === "deposit";
     if (tab === "Withdraw") return t.kind === "withdraw";
     if (tab === "Bonus") return t.kind === "bonus";
@@ -103,12 +103,12 @@ export default function WalletPage() {
         </GlassCard>
 
         <div className="grid grid-cols-2 gap-3">
-          <Tile k="Income · 30 din" v={28420} prefix="₨ " accent="from-cyan-400 to-blue-500" />
-          <Tile k="Deposits · 30 din" v={12000} prefix="₨ " accent="from-violet-500 to-fuchsia-500" />
-          <Tile k="Withdrawals · 30 din" v={9800} prefix="₨ " accent="from-emerald-400 to-teal-500" />
+          <Tile k="Income · 30 days" v={28420} prefix="₨ " accent="from-cyan-400 to-blue-500" />
+          <Tile k="Deposits · 30 days" v={12000} prefix="₨ " accent="from-violet-500 to-fuchsia-500" />
+          <Tile k="Withdrawals · 30 days" v={9800} prefix="₨ " accent="from-emerald-400 to-teal-500" />
           <Tile k="Pending" v={5000} prefix="₨ " accent="from-amber-400 to-orange-500" />
           <Tile k="Referral commission" v={6280} prefix="₨ " accent="from-pink-500 to-rose-500" />
-          <Tile k="Voice tohfey" v={2310} prefix="₨ " accent="from-fuchsia-400 to-purple-500" />
+          <Tile k="Quiz rewards · 30 days" v={840} prefix="₨ " accent="from-fuchsia-400 to-purple-500" />
         </div>
       </div>
 
@@ -172,7 +172,7 @@ function KindIcon({ kind }: { kind: Tx["kind"] }) {
   const map: Record<Tx["kind"], { icon: React.ReactNode; color: string }> = {
     quiz:     { icon: <HelpCircle className="h-3.5 w-3.5" />, color: "text-amber-300" },
     ref:      { icon: <Users className="h-3.5 w-3.5" />, color: "text-violet-300" },
-    gift:     { icon: <Mic className="h-3.5 w-3.5" />, color: "text-fuchsia-300" },
+    gift:     { icon: <Gift className="h-3.5 w-3.5" />, color: "text-fuchsia-300" },
     deposit:  { icon: <ArrowDownToLine className="h-3.5 w-3.5" />, color: "text-emerald-300" },
     withdraw: { icon: <ArrowUpFromLine className="h-3.5 w-3.5" />, color: "text-rose-300" },
     bonus:    { icon: <Trophy className="h-3.5 w-3.5" />, color: "text-amber-300" },

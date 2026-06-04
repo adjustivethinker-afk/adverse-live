@@ -23,8 +23,8 @@ export function LandingFooter() {
                 </span>
               </div>
               <p className="mt-3 max-w-sm text-sm text-white/60 leading-relaxed">
-                Pakistan ka apna earning + voice rooms platform. Halal, simple, aur har user
-                ke liye easy. 🇵🇰
+                Pakistan&apos;s own halal earning platform — simple,
+                lightweight, and easy for everyone. 🇵🇰
               </p>
               <div className="mt-5 flex items-center gap-2">
                 {[Twitter, Instagram, Youtube, Github].map((Icon, i) => (
@@ -39,7 +39,7 @@ export function LandingFooter() {
               </div>
             </div>
 
-            <Col title="Product" links={["Daily Quiz","Voice Rooms","Friends","Wallet"]} />
+            <Col title="Product" links={["Daily Quiz","Chat","Friends","Wallet"]} />
             <Col title="Help" links={["How it works","Support","Contact","FAQ"]} />
             <Col title="Legal" links={["Terms","Privacy","Refund","Community Rules"]} />
           </div>
