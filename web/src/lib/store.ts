@@ -1,143 +1,139 @@
 "use client";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { api } from "./api-client";
+import {
+  signup,
+  loginEmail,
+  logout as apiLogout,
+  refreshCurrentUser,
+  updateMyProfile,
+  signInWithGoogle as apiSignInWithGoogle,
+  completeProfile as apiCompleteProfile,
+  type AppUser,
+  type SignupInput,
+  type ProfileInput,
+} from "./api";
 
 export type Gender = "male" | "female";
 
-export type CurrentUser = {
-  id: string;
-  fullName: string;
-  username: string;
-  gender: Gender;
-  city: string;
-  phone: string;
-  avatarUrl?: string | null;
-  level: number;
-  xp: number;
-  balance: number;
-  pending: number;
-  totalEarned: number;
-  joinedAt: string;
-  referralCode: string;
-  referredBy?: string | null;
-  isAdmin?: boolean;
-  streak?: number;
-};
+export type CurrentUser = AppUser;
 
-type SignupInput = {
-  fullName: string;
-  username: string;
-  gender: Gender;
-  city: string;
-  phone: string;
-  password: string;
-  referralCode?: string;
-};
-
-type SignupResult = { ok: true } | { ok: false; error: string };
+type Result<T = void> =
+  | ({ ok: true } & T)
+  | { ok: false; error: string };
 
 type AuthState = {
   user: CurrentUser | null;
   loading: boolean;
   hydrated: boolean;
-  /** Hits /api/auth/me to refresh the cached user from the server. Safe to call anywhere. */
   refresh: () => Promise<void>;
-  signup: (data: SignupInput) => Promise<SignupResult>;
-  login: (identifier: string, password: string) => Promise<SignupResult>;
+  /** Email signup — only creates the auth account. */
+  signup: (
+    data: SignupInput,
+  ) => Promise<Result<{ needsProfile: true }>>;
+  /** Email login. */
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<Result<{ needsProfile: boolean }>>;
+  /** Google popup sign-in. */
+  signInWithGoogle: () => Promise<Result<{ needsProfile: boolean }>>;
+  /** Pick up Google redirect result on mount. */
+  consumeRedirect: () => Promise<Result<{ needsProfile: boolean }> | null>;
+  /** Finish onboarding by writing the Firestore profile + welcome bonus. */
+  completeProfile: (data: ProfileInput) => Promise<Result>;
+  /** Sign out. */
   logout: () => Promise<void>;
-  /** Local-only patch (e.g. avatar tweak before server PATCH lands). */
   update: (patch: Partial<CurrentUser>) => void;
-  /** Optimistic balance bump used by quiz reward flow. */
   credit: (amount: number, reason?: string) => void;
   debit: (amount: number, reason?: string) => void;
+  saveProfile: (patch: {
+    fullName?: string;
+    city?: string;
+    avatarUrl?: string | null;
+  }) => Promise<Result>;
 };
-
-type ServerUser = {
-  id: string;
-  fullName: string;
-  displayName: string;
-  username: string;
-  city: string | null;
-  phone: string | null;
-  avatarUrl: string | null;
-  gender: string | null;
-  level: number;
-  xp: number;
-  streak: number;
-  referralCode: string;
-  role: string;
-  isAdmin: boolean;
-  joinedAt: string;
-  balance: number;
-  pending: number;
-  totalEarned: number;
-};
-
-function fromServer(u: ServerUser): CurrentUser {
-  const g = (u.gender || "").toUpperCase();
-  return {
-    id: u.id,
-    fullName: u.fullName,
-    username: u.username,
-    gender: g === "FEMALE" ? "female" : "male",
-    city: u.city ?? "",
-    phone: u.phone ?? "",
-    avatarUrl: u.avatarUrl,
-    level: u.level,
-    xp: u.xp,
-    streak: u.streak,
-    balance: u.balance,
-    pending: u.pending,
-    totalEarned: u.totalEarned,
-    joinedAt: u.joinedAt,
-    referralCode: u.referralCode,
-    isAdmin: u.isAdmin,
-  };
-}
 
 export const useAuth = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       loading: false,
       hydrated: false,
 
       refresh: async () => {
-        const res = await api<{ user: ServerUser }>("/api/auth/me");
-        if (res.ok) set({ user: fromServer(res.data.user), hydrated: true });
-        else set({ user: null, hydrated: true });
+        try {
+          const u = await refreshCurrentUser();
+          set({ user: u, hydrated: true });
+        } catch {
+          set({ user: null, hydrated: true });
+        }
       },
 
       signup: async (data) => {
         set({ loading: true });
-        const res = await api<{ user: ServerUser }>("/api/auth/signup", {
-          method: "POST",
-          json: {
-            ...data,
-            gender: data.gender.toUpperCase(),
-          },
-        });
-        set({ loading: false });
-        if (!res.ok) return { ok: false, error: res.error.message };
-        set({ user: fromServer(res.data.user), hydrated: true });
-        return { ok: true };
+        try {
+          await signup(data);
+          set({ loading: false, hydrated: true });
+          return { ok: true, needsProfile: true };
+        } catch (e) {
+          set({ loading: false });
+          return { ok: false, error: errorMessage(e) };
+        }
       },
 
-      login: async (identifier, password) => {
+      login: async (email, password) => {
         set({ loading: true });
-        const res = await api<{ user: ServerUser }>("/api/auth/login", {
-          method: "POST",
-          json: { identifier, password },
-        });
-        set({ loading: false });
-        if (!res.ok) return { ok: false, error: res.error.message };
-        set({ user: fromServer(res.data.user), hydrated: true });
-        return { ok: true };
+        try {
+          const r = await loginEmail(email, password);
+          if (r.kind === "existing") {
+            set({ user: r.user, loading: false, hydrated: true });
+            return { ok: true, needsProfile: false };
+          }
+          set({ loading: false, hydrated: true });
+          return { ok: true, needsProfile: true };
+        } catch (e) {
+          set({ loading: false });
+          return { ok: false, error: errorMessage(e) };
+        }
+      },
+
+      signInWithGoogle: async () => {
+        set({ loading: true });
+        try {
+          const r = await apiSignInWithGoogle();
+          if (r.kind === "existing") {
+            set({ user: r.user, loading: false, hydrated: true });
+            return { ok: true, needsProfile: false };
+          }
+          set({ loading: false, hydrated: true });
+          return { ok: true, needsProfile: true };
+        } catch (e) {
+          set({ loading: false });
+          return { ok: false, error: errorMessage(e) };
+        }
+      },
+
+      consumeRedirect: async () => {
+        return null;
+      },
+
+      completeProfile: async (data) => {
+        set({ loading: true });
+        try {
+          const u = await apiCompleteProfile(data);
+          set({ user: u, loading: false, hydrated: true });
+          return { ok: true };
+        } catch (e) {
+          set({ loading: false });
+          return { ok: false, error: errorMessage(e) };
+        }
       },
 
       logout: async () => {
-        await api("/api/auth/logout", { method: "POST" }).catch(() => {});
+        try {
+          await apiLogout();
+        } catch {}
         set({ user: null });
       },
 
@@ -155,9 +151,7 @@ export const useAuth = create<AuthState>()(
                   xp: s.user.xp + Math.round(amount * 2),
                   level:
                     1 +
-                    Math.floor(
-                      (s.user.xp + Math.round(amount * 2)) / 200,
-                    ),
+                    Math.floor((s.user.xp + Math.round(amount * 2)) / 200),
                 },
               }
             : s,
@@ -174,20 +168,73 @@ export const useAuth = create<AuthState>()(
               }
             : s,
         ),
+
+      saveProfile: async (patch) => {
+        try {
+          await updateMyProfile(patch);
+          const cur = get().user;
+          if (cur) set({ user: { ...cur, ...patch } as CurrentUser });
+          return { ok: true };
+        } catch (e) {
+          return { ok: false, error: errorMessage(e) };
+        }
+      },
     }),
     {
       name: "adverse-auth",
-      // Only persist the user object so logout/login state is consistent on
-      // refresh; loading/hydrated should reset every page-load.
       partialize: (s) => ({ user: s.user }),
     },
   ),
 );
 
-// ----------------- Quiz state (server-backed) -----------------
+function errorMessage(e: unknown): string {
+  if (e instanceof Error) {
+    const m = e.message;
+    if (m.includes("auth/email-already-in-use"))
+      return "This email is already registered. Try signing in instead.";
+    if (m.includes("auth/invalid-email")) return "Invalid email address.";
+    if (m.includes("auth/weak-password"))
+      return "Password is too weak (use at least 8 characters).";
+    if (
+      m.includes("auth/wrong-password") ||
+      m.includes("auth/invalid-credential")
+    )
+      return "Wrong email or password.";
+    if (m.includes("auth/user-not-found")) return "No account found with this email.";
+    if (m.includes("auth/too-many-requests"))
+      return "Too many attempts. Please try again in a few minutes.";
+    if (m.includes("auth/network-request-failed"))
+      return "Check your internet connection and try again.";
+    if (m.includes("auth/popup-closed-by-user"))
+      return "Sign-in window was closed. Please try again.";
+    if (m.includes("auth/cancelled-popup-request")) return "";
+    if (m.includes("auth/popup-blocked"))
+      return "Your browser blocked the sign-in popup. Please allow popups and retry.";
+    if (m.includes("auth/account-exists-with-different-credential"))
+      return "This email is already registered with a different sign-in method.";
+    if (m.includes("auth/unauthorized-domain"))
+      return "This domain is not authorized. Check your backend auth configuration.";
+    if (m.includes("auth/operation-not-allowed"))
+      return "This sign-in method is disabled. Contact the site administrator to enable it.";
+    if (m.includes("auth/configuration-not-found"))
+      return "Authentication is not configured. Contact the site administrator.";
+    if (
+      m.includes("Missing or insufficient permissions") ||
+      m.includes("permission-denied") ||
+      m.includes("PERMISSION_DENIED")
+    )
+      return "Backend database is not set up yet. Contact the site administrator.";
+    if (m.includes("FAILED_PRECONDITION") || m.includes("UNAVAILABLE"))
+      return "Backend database is not reachable. Check your internet or that the backend is running.";
+    return m;
+  }
+  return String(e);
+}
+
+// ----------------- Quiz state (local cache) -----------------
 
 export type QuizAttempt = {
-  date: string; // YYYY-MM-DD
+  date: string;
   questionId: string;
   picked: number;
   correct: boolean;
@@ -202,7 +249,6 @@ type QuizState = {
   hoursUntilNextQuiz: () => number;
 };
 
-/** Local cache of attempts so the UI feels instant even before /api/quiz/history loads. */
 export const useQuiz = create<QuizState>()(
   persist(
     (set, get) => ({

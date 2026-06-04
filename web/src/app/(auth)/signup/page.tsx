@@ -2,159 +2,177 @@
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { GoogleIcon } from "@/components/ui/google-icon";
 import Link from "next/link";
-import { useState } from "react";
-import { Eye, EyeOff, Lock, Phone, User, Gift, MapPin, AtSign, UserCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import { PK_CITIES, isValidPkPhone } from "@/lib/pk";
 import { useAuth } from "@/lib/store";
 
 export default function SignupPage() {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [googleLoading, setGoogleLoading] = useState(false);
   const signup = useAuth((s) => s.signup);
+  const signInWithGoogle = useAuth((s) => s.signInWithGoogle);
+  const user = useAuth((s) => s.user);
+  const hydrated = useAuth((s) => s.hydrated);
 
   const [form, setForm] = useState({
     fullName: "",
-    username: "",
-    gender: "male" as "male" | "female",
-    city: "Karachi",
-    phone: "",
+    email: "",
     password: "",
-    referralCode: "",
   });
 
-  const onChange = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm((s) => ({ ...s, [k]: e.target.value }));
+  useEffect(() => {
+    if (!hydrated) return;
+    if (user) {
+      window.location.replace(user.status === "PENDING_PROFILE" ? "/complete-profile/" : "/dashboard/");
+    }
+  }, [hydrated, user]);
+
+  const onChange =
+    (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((s) => ({ ...s, [k]: e.target.value }));
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.fullName.trim().length < 2) return toast.error("Apna poora naam likhein.");
-    if (!/^[a-z0-9_]{3,20}$/i.test(form.username)) return toast.error("Username 3-20 characters, sirf letters/numbers/underscore.");
-    if (!isValidPkPhone(form.phone)) return toast.error("Valid Pakistani number daalein (03xx xxxxxxx).");
-    if (form.password.length < 8) return toast.error("Password kam az kam 8 characters ka hona chahiye.");
+    if (form.fullName.trim().length < 2) return toast.error("Enter your name.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      return toast.error("Enter a valid email.");
+    if (form.password.length < 8)
+      return toast.error("Password must be at least 8 characters.");
 
     setLoading(true);
-    const res = await signup({ ...form, referralCode: form.referralCode || undefined });
+    const res = await signup({
+      fullName: form.fullName,
+      email: form.email,
+      password: form.password,
+    });
     setLoading(false);
     if (!res.ok) {
-      toast.error("Account banane mein masla", { description: res.error });
+      toast.error("Sign up failed", { description: res.error });
       return;
     }
-    toast.success("Mubarak! Account ban gaya.", { description: "PKR 10 ka welcome bonus apke wallet mein add ho gaya." });
-    router.push("/welcome");
+    sessionStorage.setItem(
+      "adverse:signup-name",
+      form.fullName.trim(),
+    );
+    window.location.href = "/complete-profile/";
+  };
+
+  const onGoogle = async () => {
+    setGoogleLoading(true);
+    const res = await signInWithGoogle();
+    setGoogleLoading(false);
+    if (!res.ok) {
+      if (res.error)
+        toast.error("Google sign-in failed", { description: res.error });
+      return;
+    }
+    window.location.href = res.needsProfile
+      ? "/complete-profile/"
+      : "/dashboard/";
   };
 
   return (
     <AuthShell
-      title={<>Welcome to <span className="text-gradient-neon">AdVerse Live</span></>}
-      subtitle={
-        <span className="inline-flex items-center gap-2">
-          <Gift className="h-4 w-4 text-amber-300" /> Free PKR 10 ka welcome bonus, ab hi.
-        </span>
+      title={
+        <>
+          Create your <span className="text-gradient-neon">account</span>
+        </>
       }
+      subtitle="It only takes a minute."
       footer={
         <p className="text-center text-xs text-white/55">
-          Pehle se account hai?{" "}
-          <Link href="/login" className="text-white hover:text-cyan-300 transition">Sign in</Link>
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="text-white hover:text-cyan-300 transition"
+          >
+            Sign in
+          </Link>
         </p>
       }
     >
-      <form className="space-y-3.5" onSubmit={onSubmit}>
-        <Input
-          label="Poora naam"
-          icon={<User />}
-          id="fullName"
-          placeholder="Aroush Khan"
-          value={form.fullName}
-          onChange={onChange("fullName")}
-          required
-        />
-        <Input
-          label="Username"
-          icon={<AtSign />}
-          id="username"
-          placeholder="aroush123"
-          value={form.username}
-          onChange={onChange("username")}
-          autoCapitalize="none"
-          required
-        />
+      <div className="space-y-4">
+        <button
+          type="button"
+          onClick={onGoogle}
+          disabled={googleLoading || loading}
+          className="w-full inline-flex items-center justify-center gap-2.5 rounded-2xl bg-white text-gray-900 font-medium text-sm h-11 hover:bg-white/90 transition disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <GoogleIcon className="h-[18px] w-[18px]" />
+          {googleLoading ? "Connecting…" : "Continue with Google"}
+        </button>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Select
-            label="Gender"
-            icon={<UserCircle2 />}
-            id="gender"
-            value={form.gender}
-            onChange={onChange("gender")}
-            options={[
-              { value: "male", label: "Male" },
-              { value: "female", label: "Female" },
-            ]}
-          />
-          <Select
-            label="Sheher"
-            icon={<MapPin />}
-            id="city"
-            value={form.city}
-            onChange={onChange("city")}
-            options={PK_CITIES.map((c) => ({ value: c, label: c }))}
-          />
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-white/10" />
+          </div>
+          <div className="relative flex justify-center text-[11px] uppercase tracking-[0.18em] text-white/45">
+            <span className="px-3 bg-graphite/60 backdrop-blur-md rounded-full">
+              or
+            </span>
+          </div>
         </div>
 
-        <Input
-          label="Phone number (Pakistan)"
-          icon={<Phone />}
-          id="phone"
-          type="tel"
-          placeholder="03xx xxxxxxx"
-          value={form.phone}
-          onChange={onChange("phone")}
-          required
-        />
-
-        <Input
-          label="Password"
-          icon={<Lock />}
-          id="password"
-          type={show ? "text" : "password"}
-          placeholder="6+ characters"
-          value={form.password}
-          onChange={onChange("password")}
-          required
-          trailing={
-            <button type="button" onClick={() => setShow((s) => !s)} className="hover:text-white transition">
-              {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          }
-        />
-
-        <Input
-          label="Referral code (optional)"
-          id="ref"
-          placeholder="Agar kisi ne invite kiya hai"
-          value={form.referralCode}
-          onChange={onChange("referralCode")}
-        />
-
-        <label className="flex items-start gap-2 text-xs text-white/60 pt-1">
-          <input type="checkbox" required className="mt-0.5 accent-violet-500 h-4 w-4 rounded" />
-          Main <Link href="#" className="text-white hover:text-cyan-300">Terms</Link> aur{" "}
-          <Link href="#" className="text-white hover:text-cyan-300">Privacy Policy</Link> se ittefaq karta/karti hoon.
-        </label>
-
-        <Button type="submit" size="lg" variant="neon" className="w-full" loading={loading}>
-          Account banaiye & PKR 10 lijiye
-        </Button>
-
-        <p className="text-center text-[11px] text-white/45 pt-1">
-          🇵🇰 Sirf Pakistan ke users ke liye.
-        </p>
-      </form>
+        <form className="space-y-3" onSubmit={onSubmit}>
+          <Input
+            label="Full name"
+            icon={<User />}
+            id="fullName"
+            placeholder="Your name"
+            value={form.fullName}
+            onChange={onChange("fullName")}
+            required
+          />
+          <Input
+            label="Email"
+            icon={<Mail />}
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={form.email}
+            onChange={onChange("email")}
+            autoCapitalize="none"
+            required
+          />
+          <Input
+            label="Password"
+            icon={<Lock />}
+            id="password"
+            type={show ? "text" : "password"}
+            placeholder="At least 8 characters"
+            value={form.password}
+            onChange={onChange("password")}
+            required
+            trailing={
+              <button
+                type="button"
+                onClick={() => setShow((s) => !s)}
+                className="hover:text-white transition"
+                aria-label={show ? "Hide password" : "Show password"}
+              >
+                {show ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            }
+          />
+          <Button
+            type="submit"
+            size="lg"
+            variant="neon"
+            className="w-full"
+            loading={loading}
+          >
+            Create account
+          </Button>
+        </form>
+      </div>
     </AuthShell>
   );
 }

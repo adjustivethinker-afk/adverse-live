@@ -9,7 +9,7 @@ const ALERTS = [
   { u: "Faraz A.", reason: "5 referrals from same device fingerprint", level: "high", risk: 92 },
   { u: "Reema K.", reason: "Account creation from same IP cluster (8x)", level: "high", risk: 88 },
   { u: "Naveed", reason: "Repeated failed deposits with edited TXN IDs", level: "med", risk: 64 },
-  { u: "Saad", reason: "Voice room reactions exceed human-rate threshold", level: "med", risk: 58 },
+  { u: "Saad", reason: "Quiz submissions exceed human-rate threshold", level: "med", risk: 58 },
   { u: "Mehak", reason: "Login from rotating IPs (5 countries)", level: "low", risk: 41 },
 ] as const;
 

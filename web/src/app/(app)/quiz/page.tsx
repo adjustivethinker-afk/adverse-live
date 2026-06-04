@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import confetti from "canvas-confetti";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,21 +18,20 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/store";
 import { formatPKR } from "@/lib/utils";
-import { api } from "@/lib/api-client";
+import {
+  fetchTodaysQuiz,
+  fetchQuizHistory,
+  submitQuizAnswer,
+  type QuizQuestion,
+  type QuizAttempt as FbQuizAttempt,
+} from "@/lib/api";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 const DAILY_REWARD = 30; // PKR
 
-type Question = {
-  id: string;
-  category: string;
-  question: string;
-  options: string[];
-  correctIndex?: number;
-  explanation?: string | null;
-};
+type Question = QuizQuestion;
 
 type TodayResp = {
   attempted: boolean;
@@ -43,23 +41,12 @@ type TodayResp = {
     picked: number;
     correct: boolean;
     reward: number;
-    at: string;
+    at: number;
   };
-  nextResetAt?: string;
+  nextResetAt?: number;
 };
 
-type HistoryItem = {
-  id: string;
-  date: string;
-  correct: boolean;
-  picked: number;
-  reward: number;
-  at: string;
-  question: string;
-  category: string;
-  options: string[];
-  correctIndex: number;
-};
+type HistoryItem = FbQuizAttempt & { correctIndex: number };
 
 export default function QuizPage() {
   const router = useRouter();
@@ -85,25 +72,49 @@ export default function QuizPage() {
     if (!user) return;
     let cancelled = false;
     (async () => {
-      const [t, h] = await Promise.all([
-        api<TodayResp>("/api/quiz/today"),
-        api<{ attempts: HistoryItem[] }>("/api/quiz/history"),
-      ]);
-      if (cancelled) return;
-      if (t.ok) {
-        setToday(t.data);
-        if (t.data.attempted && t.data.attempt) {
-          setPicked(t.data.attempt.picked);
-          setRevealedAnswer(t.data.question.correctIndex ?? null);
-          setExplanation(t.data.question.explanation ?? null);
-          if (t.data.nextResetAt) {
-            const ms =
-              new Date(t.data.nextResetAt).getTime() - Date.now();
+      try {
+        const [t, h] = await Promise.all([
+          fetchTodaysQuiz(),
+          fetchQuizHistory(20),
+        ]);
+        if (cancelled) return;
+        const todayResp: TodayResp = {
+          attempted: t.attempted,
+          question: t.question,
+          attempt: t.attempt
+            ? {
+                questionId: t.attempt.questionId,
+                picked: t.attempt.picked,
+                correct: t.attempt.correct,
+                reward: t.attempt.reward,
+                at: t.attempt.at,
+              }
+            : undefined,
+          nextResetAt: t.attempt
+            ? t.attempt.at + 24 * 3600 * 1000
+            : undefined,
+        };
+        setToday(todayResp);
+        if (t.attempted && t.attempt) {
+          setPicked(t.attempt.picked);
+          setRevealedAnswer(t.question.correctIndex);
+          setExplanation(t.question.explanation ?? null);
+          if (todayResp.nextResetAt) {
+            const ms = todayResp.nextResetAt - Date.now();
             setHours(Math.max(0, ms / 3600 / 1000));
           }
         }
+        setHistory(
+          h.map((a) => ({
+            ...a,
+            correctIndex: -1,
+          })),
+        );
+      } catch (e) {
+        toast.error("Couldn't load quiz", {
+          description: e instanceof Error ? e.message : String(e),
+        });
       }
-      if (h.ok) setHistory(h.data.attempts);
     })();
     return () => {
       cancelled = true;
@@ -132,41 +143,28 @@ export default function QuizPage() {
   const submit = async () => {
     if (picked == null || revealed || submitting) return;
     setSubmitting(true);
-    const res = await api<{
-      correct: boolean;
-      correctIndex: number;
-      explanation: string | null;
-      reward: number;
-      balance: number;
-      xp: number;
-      level: number;
-      streak: number;
-    }>("/api/quiz/submit", {
-      method: "POST",
-      json: { questionId: question.id, pickedIndex: picked },
-    });
-    setSubmitting(false);
-    if (!res.ok) {
-      toast.error("Submit nahi hua", { description: res.error.message });
-      return;
+    try {
+      const res = await submitQuizAnswer(question.id, picked);
+      setRevealedAnswer(res.correctIndex);
+      setExplanation(question.explanation ?? null);
+      setHours(24);
+      if (res.correct) {
+        toast.success(`Correct! ${formatPKR(res.reward)} credited.`, {
+          description: "Added to your wallet.",
+        });
+      } else {
+        toast.error("Wrong answer. Try again tomorrow.");
+      }
+      void refresh();
+      const h = await fetchQuizHistory(20);
+      setHistory(h.map((a) => ({ ...a, correctIndex: -1 })));
+    } catch (e) {
+      toast.error("Submit failed", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setSubmitting(false);
     }
-    setRevealedAnswer(res.data.correctIndex);
-    setExplanation(res.data.explanation);
-    setHours(24);
-    if (res.data.correct) {
-      fireConfetti();
-      toast.success(
-        `Mubarak! ${formatPKR(res.data.reward)} reward credited.`,
-        { description: "Apke wallet mein add ho gaya hai." },
-      );
-    } else {
-      toast.error("Galat jawab. Agla mauqa 24 ghante baad.");
-    }
-    // Refresh server-truth balance/xp/level.
-    void refresh();
-    // Refresh history.
-    const h = await api<{ attempts: HistoryItem[] }>("/api/quiz/history");
-    if (h.ok) setHistory(h.data.attempts);
   };
 
   return (
@@ -185,14 +183,14 @@ export default function QuizPage() {
               <HelpCircle className="h-3 w-3 text-amber-300" /> Daily Quiz Reward
             </span>
             <h1 className="mt-2 font-display text-3xl sm:text-4xl font-semibold tracking-tight">
-              Aaj ka <span className="text-gradient-neon">Sawaal</span>
+              Today&apos;s <span className="text-gradient-neon">Question</span>
             </h1>
             <p className="mt-1 text-sm text-white/60">
-              Aik aasaan sawaal — sahi jawab par{" "}
+              One easy question — answer correctly to earn{" "}
               <span className="text-amber-300 font-semibold">
                 {formatPKR(DAILY_REWARD)}
-              </span>{" "}
-              reward.
+              </span>
+              .
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -220,7 +218,7 @@ export default function QuizPage() {
             </span>
             <div className="flex-1">
               <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">
-                Sawaal
+                Question
               </p>
               <h2 className="mt-1.5 font-display text-xl sm:text-2xl font-semibold tracking-tight leading-snug">
                 {question.question}
@@ -301,11 +299,11 @@ export default function QuizPage() {
                     </span>
                     <div>
                       <p className="font-display text-base font-semibold">
-                        Mubarak! Sahi jawab.
+                        Correct answer!
                       </p>
                       <p className="text-xs text-emerald-200">
-                        {formatPKR(DAILY_REWARD)} apke wallet mein add ho gaya.
-                        Kal phir milte hain.
+                        {formatPKR(DAILY_REWARD)} has been added to your wallet.
+                        See you tomorrow.
                       </p>
                     </div>
                   </div>
@@ -316,16 +314,16 @@ export default function QuizPage() {
                     </span>
                     <div>
                       <p className="font-display text-base font-semibold">
-                        Koi baat nahi.
+                        Better luck next time.
                       </p>
                       <p className="text-xs text-rose-200">
-                        Sahi jawab:{" "}
+                        Correct answer:{" "}
                         <strong>
                           {revealedAnswer != null
                             ? question.options[revealedAnswer]
                             : "—"}
                         </strong>
-                        . Agla quiz ~ {Math.ceil(hours)} ghante baad.
+                        . Next quiz in ~ {Math.ceil(hours)} hours.
                       </p>
                     </div>
                   </div>
@@ -349,22 +347,22 @@ export default function QuizPage() {
                 variant="neon"
                 className="w-full sm:w-auto"
               >
-                Jawab submit karein <ArrowRight className="h-4 w-4" />
+                Submit answer <ArrowRight className="h-4 w-4" />
               </Button>
               <p className="text-[11px] text-white/45">
-                Note: Aaj sirf aik mauqa milta hai. Soch samajh kar select karein.
+                Note: You only get one attempt per day. Choose carefully.
               </p>
             </div>
           ) : (
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <Link href="/dashboard" className="flex-1">
                 <Button size="lg" variant="glass" className="w-full">
-                  Dashboard par jayein
+                  Back to dashboard
                 </Button>
               </Link>
-              <Link href="/voice-rooms" className="flex-1">
+              <Link href="/friends" className="flex-1">
                 <Button size="lg" variant="ghost" className="w-full">
-                  Voice rooms explore karein
+                  Find friends
                 </Button>
               </Link>
             </div>
@@ -376,7 +374,7 @@ export default function QuizPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <GlassCard className="p-5">
           <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">
-            Aap ka record
+            Your record
           </p>
           <div className="mt-2 flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-amber-300" />
@@ -385,24 +383,24 @@ export default function QuizPage() {
             </p>
           </div>
           <p className="mt-1 text-[11px] text-white/55">
-            Sahi jawab ki tadaad
+            Correct answers so far
           </p>
           <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
             <Mini
               value={history.filter((a) => a.correct).length}
-              label="Sahi"
+              label="Correct"
               color="emerald"
             />
             <Mini
               value={history.filter((a) => !a.correct).length}
-              label="Ghalat"
+              label="Wrong"
               color="rose"
             />
             <Mini
               value={formatPKR(
                 history.reduce((acc, a) => acc + (a.reward || 0), 0),
               )}
-              label="Total kamai"
+              label="Earned"
               color="amber"
             />
           </div>
@@ -411,13 +409,13 @@ export default function QuizPage() {
         <GlassCard className="p-5 lg:col-span-2">
           <div className="flex items-center justify-between">
             <p className="text-[11px] uppercase tracking-[0.18em] text-white/55 inline-flex items-center gap-1.5">
-              <History className="h-3 w-3" /> Pichli koshishein
+              <History className="h-3 w-3" /> Past attempts
             </p>
             <Badge variant="default">Last 10</Badge>
           </div>
           {history.length === 0 ? (
             <p className="mt-4 text-sm text-white/55">
-              Abhi tak koi attempt nahi. Apna pehla quiz aaj hi solve karein!
+              No attempts yet. Take your first quiz today!
             </p>
           ) : (
             <ul className="mt-3 divide-y divide-white/[0.05]">
@@ -485,17 +483,3 @@ function Mini({
   );
 }
 
-function fireConfetti() {
-  const fire = (particleRatio: number, opts: confetti.Options) =>
-    confetti({
-      ...opts,
-      origin: { y: 0.6 },
-      particleCount: Math.floor(160 * particleRatio),
-      colors: ["#FFC700", "#FF8A00", "#00D26A", "#00E5FF", "#FFFFFF"],
-    });
-  fire(0.25, { spread: 26, startVelocity: 55 });
-  fire(0.2, { spread: 60 });
-  fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
-  fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
-  fire(0.1, { spread: 120, startVelocity: 45 });
-}

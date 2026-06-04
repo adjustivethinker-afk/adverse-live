@@ -2,7 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { GlassCard } from "@/components/ui/glass-card";
 import { StatCard } from "@/components/ui/stat";
-import { ArrowUpRight, BarChart3, Coins, Mic, TrendingUp, Users } from "lucide-react";
+import { ArrowUpRight, BarChart3, Coins, HelpCircle, Users } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const earnings = Array.from({ length: 30 }).map((_, i) => ({ d: i, v: Math.round(800 + Math.sin(i / 3) * 320 + i * 40 + Math.random() * 200) }));
@@ -10,11 +10,10 @@ const retention = [
   { d: "D0", v: 100 }, { d: "D1", v: 78 }, { d: "D3", v: 62 }, { d: "D7", v: 51 }, { d: "D14", v: 44 }, { d: "D30", v: 38 },
 ];
 const sources = [
-  { name: "Ads", v: 42, color: "#00E5FF" },
-  { name: "Referrals", v: 28, color: "#8B5CF6" },
-  { name: "Voice", v: 16, color: "#FF4D6D" },
-  { name: "Missions", v: 9, color: "#00D26A" },
-  { name: "Other", v: 5, color: "#FFC700" },
+  { name: "Quiz", v: 42, color: "#00E5FF" },
+  { name: "Referrals", v: 38, color: "#8B5CF6" },
+  { name: "Missions", v: 12, color: "#00D26A" },
+  { name: "Bonus", v: 8, color: "#FFC700" },
 ];
 
 export default function AnalyticsPage() {
@@ -34,7 +33,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total earnings" value={184902} prefix="₨ " icon={<Coins className="h-4 w-4" />} accent="cyan" delta={12.4} />
         <StatCard label="Active referrals" value={224} icon={<Users className="h-4 w-4" />} accent="violet" delta={6.4} />
-        <StatCard label="Voice room hours" value={84} icon={<Mic className="h-4 w-4" />} accent="emerald" delta={9.4} suffix=" h" />
+        <StatCard label="Quiz wins" value={84} icon={<HelpCircle className="h-4 w-4" />} accent="emerald" delta={9.4} />
         <StatCard label="Avg session" value={12.6} decimals={1} suffix=" min" icon={<ArrowUpRight className="h-4 w-4" />} accent="amber" delta={2.1} />
       </div>
 

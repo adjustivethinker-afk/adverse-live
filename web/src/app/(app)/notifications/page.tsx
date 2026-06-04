@@ -3,12 +3,12 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
-import { Bell, CheckCheck, Coins, Mic, ShieldAlert, Trophy, Users, Wallet } from "lucide-react";
+import { Bell, CheckCheck, Coins, MessageSquare, ShieldAlert, Users, Wallet } from "lucide-react";
 import { useState } from "react";
 
 type Notif = {
   id: string;
-  kind: "reward" | "ref" | "voice" | "deposit" | "withdraw" | "system";
+  kind: "reward" | "ref" | "chat" | "deposit" | "withdraw" | "system";
   title: string;
   desc: string;
   date: string;
@@ -16,12 +16,12 @@ type Notif = {
 };
 
 const SEED: Notif[] = [
-  { id: "n1", kind: "reward", title: "Reward mil gaya", desc: "₨ 30 add hua · Daily quiz reward", date: "2 min pehle" },
-  { id: "n2", kind: "ref", title: "Naya dost", desc: "Sara apke link se join hui", date: "12 min pehle" },
-  { id: "n3", kind: "voice", title: "Abhi live", desc: "Karachi Walay room shuru hua", date: "32 min pehle", read: true },
-  { id: "n4", kind: "deposit", title: "Deposit verify ho gaya", desc: "₨ 5,000 EasyPaisa se", date: "1 ghanta pehle", read: true },
-  { id: "n5", kind: "withdraw", title: "Withdrawal complete", desc: "₨ 2,000 JazzCash mein", date: "1 ghanta pehle", read: true },
-  { id: "n6", kind: "system", title: "Naya device sign-in", desc: "Karachi, PK · Chrome", date: "3 ghante pehle" },
+  { id: "n1", kind: "reward", title: "Reward earned", desc: "₨ 30 added · Daily quiz reward", date: "2 min ago" },
+  { id: "n2", kind: "ref", title: "New friend", desc: "Sara joined using your link", date: "12 min ago" },
+  { id: "n3", kind: "chat", title: "New message", desc: "Hassan sent you a message", date: "32 min ago", read: true },
+  { id: "n4", kind: "deposit", title: "Deposit verified", desc: "₨ 5,000 via EasyPaisa", date: "1 hour ago", read: true },
+  { id: "n5", kind: "withdraw", title: "Withdrawal complete", desc: "₨ 2,000 to JazzCash", date: "1 hour ago", read: true },
+  { id: "n6", kind: "system", title: "New device sign-in", desc: "Karachi, PK · Chrome", date: "3 hours ago" },
 ];
 
 const TABS: { id: string; label: string }[] = [
@@ -29,7 +29,7 @@ const TABS: { id: string; label: string }[] = [
   { id: "unread", label: "Unread" },
   { id: "reward", label: "Rewards" },
   { id: "ref", label: "Referrals" },
-  { id: "voice", label: "Voice" },
+  { id: "chat", label: "Chat" },
   { id: "system", label: "System" },
 ];
 
@@ -91,7 +91,7 @@ function NotifIcon({ kind }: { kind: Notif["kind"] }) {
   const map: Record<Notif["kind"], { icon: React.ReactNode; color: string }> = {
     reward:   { icon: <Coins className="h-4 w-4" />, color: "from-amber-400 to-orange-500" },
     ref:      { icon: <Users className="h-4 w-4" />, color: "from-cyan-400 to-blue-500" },
-    voice:    { icon: <Mic className="h-4 w-4" />, color: "from-violet-500 to-fuchsia-500" },
+    chat:     { icon: <MessageSquare className="h-4 w-4" />, color: "from-emerald-400 to-teal-500" },
     deposit:  { icon: <Wallet className="h-4 w-4" />, color: "from-emerald-400 to-teal-500" },
     withdraw: { icon: <Wallet className="h-4 w-4" />, color: "from-pink-500 to-rose-500" },
     system:   { icon: <ShieldAlert className="h-4 w-4" />, color: "from-indigo-500 to-violet-500" },

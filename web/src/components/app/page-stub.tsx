@@ -14,8 +14,8 @@ export function PageStub({ title, subtitle, chip }: { title: string; subtitle?: 
         </div>
       </GlassCard>
       <GlassCard className="p-10 text-center">
-        <Badge variant="neon" pulse>Coming next</Badge>
-        <p className="mt-3 text-sm text-white/60">This module is wired to the API and ready for content. See <span className="font-mono">docs/API.md</span> for endpoints.</p>
+        <Badge variant="neon" pulse>Coming soon</Badge>
+        <p className="mt-3 text-sm text-white/60">This section is in active development.</p>
       </GlassCard>
     </div>
   );

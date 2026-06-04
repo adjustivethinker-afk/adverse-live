@@ -6,17 +6,17 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Heart, Image, MessageCircle, Megaphone, Send, Share2, Smile, TrendingUp } from "lucide-react";
 import { useState } from "react";
 
-const TRENDING = ["#KarachiWalay", "#DailyQuiz", "#StreakClub", "#TopReferrers", "#VoiceRooms"];
+const TRENDING = ["#DailyQuiz", "#StreakClub", "#TopReferrers", "#PakistanEarning", "#Karachi"];
 
 const POSTS = [
-  { u: "Aroush K.", text: "7-din ka streak mukammal! Diamond chest aa raha hai 💎", likes: 184, comments: 21, time: "2h", img: false },
-  { u: "Hassan R.", text: "Aaj raat 9 baje voice room banaa raha hoon — 'Lahori Mehfil 2.0'. Sab aaiye!", likes: 92, comments: 14, time: "3h", img: false },
-  { u: "Sara M.", text: "Pro tip: roz ek hi waqt par quiz solve karein, habit ban jaati hai.", likes: 240, comments: 38, time: "5h", img: false },
+  { u: "Aroush K.", text: "7-day streak completed! Diamond chest is on its way 💎", likes: 184, comments: 21, time: "2h", img: false },
+  { u: "Hassan R.", text: "Solved this morning's quiz — the Roman Urdu question was fun!", likes: 92, comments: 14, time: "3h", img: false },
+  { u: "Sara M.", text: "Pro tip: solve the quiz at the same time every day — it becomes a habit.", likes: 240, comments: 38, time: "5h", img: false },
 ];
 
 const ANNOUNCEMENTS = [
-  { t: "Weekly chest har Sunday", d: "Roz keys kamaiye, har Sunday 9 PM par chest unlock." },
-  { t: "Withdrawal speeds behtar", d: "Ab average payout 2 ghante ke andar hota hai." },
+  { t: "Weekly chest every Sunday", d: "Earn keys daily, chest unlocks every Sunday 9 PM." },
+  { t: "Faster withdrawals", d: "Average payout is now under 2 hours." },
 ];
 
 export default function CommunityPage() {
