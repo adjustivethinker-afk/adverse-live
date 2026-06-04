@@ -1,0 +1,68 @@
+# Render Blueprint — deploys the AdVerse Live API as a free Web Service.
+# Usage:
+#   1. Push this repo to GitHub.
+#   2. Go to https://dashboard.render.com → "New" → "Blueprint" → connect repo.
+#   3. Render reads this file and creates the service automatically.
+#   4. After it's up, set the secret env vars in the dashboard
+#      (DATABASE_URL, REDIS_URL, JWT_*, CORS_ORIGINS, etc).
+#
+# The frontend lives on Vercel separately — see DEPLOY.md.
+
+services:
+  - type: web
+    name: adverse-api
+    runtime: node
+    plan: free
+    region: singapore        # closest free region to Pakistan
+    rootDir: api
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000          # Render maps this to public 443
+      - key: ENABLE_SWAGGER
+        value: "0"
+      - key: APP_URL
+        sync: false           # set in dashboard
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: JWT_REFRESH_TTL
+        value: 30d
+      - key: STORAGE_PROVIDER
+        value: cloudinary
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: TURN_URL
+        value: turn:turn.metered.live:80
+      - key: TURN_USER
+        sync: false
+      - key: TURN_PASS
+        sync: false

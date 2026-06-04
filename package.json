@@ -1,0 +1,6 @@
+{
+  "name": "adverse-live",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AdVerse Live - run web with: cd web && npm install && npm run dev"
+}

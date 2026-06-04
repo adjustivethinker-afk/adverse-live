@@ -1,0 +1,900 @@
+// AdVerse Live — Prisma schema
+// Postgres + Prisma. Comprehensive entities, indexes & relationships.
+// Free DB providers: Neon · Supabase · Render PG (free tier).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ============== Enums =====================
+// ==========================================
+
+enum Role {
+  USER
+  CREATOR
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AccountStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETED
+}
+
+enum KycStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  FACEBOOK
+  APPLE
+  PHONE
+}
+
+enum DeviceKind {
+  IOS
+  ANDROID
+  WEB
+  PWA
+}
+
+enum TransactionType {
+  QUIZ_REWARD                 // daily quiz correct-answer payout
+  REFERRAL_COMMISSION_L1
+  REFERRAL_COMMISSION_L2
+  REFERRAL_COMMISSION_L3
+  WELCOME_BONUS
+  STREAK_BONUS
+  MISSION_REWARD
+  CHEST_REWARD
+  VOICE_GIFT_RECEIVED
+  VOICE_GIFT_SENT
+  DEPOSIT
+  WITHDRAWAL
+  ADJUSTMENT
+  REFUND
+  FEE
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REJECTED
+  REVERSED
+}
+
+enum DepositMethod {
+  JAZZCASH
+  EASYPAISA
+  BANK_TRANSFER
+  USDT_TRC20
+  CARD
+}
+
+enum WithdrawalMethod {
+  JAZZCASH
+  EASYPAISA
+  BANK_TRANSFER
+  USDT_TRC20
+}
+
+enum DepositStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum VoiceRoomStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELED
+}
+
+enum VoiceRoomVisibility {
+  PUBLIC
+  PRIVATE
+  PASSWORD
+}
+
+enum VoiceRole {
+  HOST
+  CO_HOST
+  SPEAKER
+  LISTENER
+  MODERATOR
+}
+
+enum NotificationKind {
+  REWARD
+  REFERRAL
+  VOICE_ROOM
+  DEPOSIT
+  WITHDRAWAL
+  SYSTEM
+  SECURITY
+  MARKETING
+  ACHIEVEMENT
+}
+
+enum NotificationChannel {
+  PUSH
+  EMAIL
+  IN_APP
+  SMS
+}
+
+enum MissionType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  ONE_TIME
+}
+
+enum MissionStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  CLAIMED
+}
+
+enum FraudSignalKind {
+  DEVICE_DUP
+  IP_DUP
+  RAPID_REFERRAL
+  AD_FRAUD
+  ABNORMAL_RATE
+  GEO_HOPPING
+  PAYMENT_ABUSE
+}
+
+enum FraudSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ReportTargetType {
+  USER
+  VOICE_ROOM
+  POST
+  COMMENT
+  MESSAGE
+}
+
+// ==========================================
+// ============== User core =================
+// ==========================================
+
+model User {
+  id              String         @id @default(cuid())
+  email           String?        @unique
+  emailVerifiedAt DateTime?
+  phone           String?        @unique
+  phoneVerifiedAt DateTime?
+  username        String         @unique @default(cuid())
+  fullName        String         // poora naam (collected at signup)
+  displayName     String         // shown in feeds (defaults to first name)
+  gender          Gender?        // collected at signup
+  bio             String?
+  avatarUrl       String?
+  coverUrl        String?
+  country         String         @default("PK") // app is Pakistan-only
+  city            String?        // PK city — required at signup
+  language        String?        @default("en")
+  currency        String?        @default("PKR")
+  timezone        String?        @default("Asia/Karachi")
+  lastActiveAt    DateTime?      // for "most active users" sorting
+  activityScore   Int            @default(0) // computed from XP, messages, rooms
+
+  password        String?        // argon2 hash; null for social-only accounts
+  role            Role           @default(USER)
+  status          AccountStatus  @default(PENDING_VERIFICATION)
+  kycStatus       KycStatus      @default(NONE)
+  isVip           Boolean        @default(false)
+  vipUntil        DateTime?
+
+  // Referral
+  referralCode    String         @unique
+  referredById    String?
+  referredBy      User?          @relation("UserReferral", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals       User[]         @relation("UserReferral")
+
+  // Auth
+  totpSecret      String?
+  totpEnabled     Boolean        @default(false)
+  passkeys        Passkey[]
+
+  // XP & Streaks
+  xp              Int            @default(0)
+  level           Int            @default(1)
+  streak          Int            @default(0)
+  streakLastAt    DateTime?
+
+  // Wallet
+  wallet          Wallet?
+
+  // Relations
+  authIdentities  AuthIdentity[]
+  devices         Device[]
+  sessions        Session[]
+  transactions    Transaction[]
+  quizAttempts    QuizAttempt[]
+  hostedRooms     VoiceRoom[]    @relation("RoomHost")
+  participations  RoomParticipant[]
+  messages        RoomMessage[]
+  giftsSent       VoiceGift[]    @relation("GiftSender")
+  giftsReceived   VoiceGift[]    @relation("GiftReceiver")
+  deposits        Deposit[]
+  withdrawals    Withdrawal[]
+  notifications   Notification[]
+  missions        UserMission[]
+  achievements    UserAchievement[]
+  posts           Post[]
+  comments        Comment[]
+  postLikes       PostLike[]
+  follows         Follow[]       @relation("Follower")
+  followers       Follow[]       @relation("Followed")
+  reportsMade     Report[]       @relation("Reporter")
+  fraudSignals    FraudSignal[]
+  auditLogs       AuditLog[]
+  pushTokens      PushToken[]
+  l1ReferralRows  Referral[]     @relation("RefParent")
+  l1ChildRows     Referral[]     @relation("RefChild")
+  conversations   ConversationParticipant[]
+  chatMessages    ChatMessage[]  @relation("ChatMessageSender")
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  @@index([referredById])
+  @@index([status])
+  @@index([role])
+  @@index([createdAt])
+  @@index([city])
+  @@index([activityScore])
+  @@index([lastActiveAt])
+}
+
+model AuthIdentity {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       AuthProvider
+  providerSubId  String
+  email          String?
+  data           Json?
+  createdAt      DateTime     @default(now())
+
+  @@unique([provider, providerSubId])
+  @@index([userId])
+}
+
+model Passkey {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialId String   @unique
+  publicKey    Bytes
+  counter      Int      @default(0)
+  transports   String[]
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Device {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind          DeviceKind
+  fingerprint   String
+  os            String?
+  osVersion     String?
+  model         String?
+  appVersion    String?
+  ipFirstSeen   String?
+  ipLastSeen    String?
+  countryFirst  String?
+  countryLast   String?
+  trusted       Boolean    @default(false)
+  lastSeenAt    DateTime?
+  createdAt     DateTime   @default(now())
+
+  sessions      Session[]
+
+  @@unique([userId, fingerprint])
+  @@index([fingerprint])
+}
+
+model Session {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId     String?
+  device       Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  refreshToken String    @unique
+  ip           String?
+  userAgent    String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  DeviceKind
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ==========================================
+// ============== Wallet ====================
+// ==========================================
+
+model Wallet {
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currency     String        @default("PKR")
+  balance      Decimal       @default(0) @db.Decimal(18, 2)
+  pending      Decimal       @default(0) @db.Decimal(18, 2)
+  totalEarned  Decimal       @default(0) @db.Decimal(18, 2)
+  totalSpent   Decimal       @default(0) @db.Decimal(18, 2)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletId        String
+  wallet          Wallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type            TransactionType
+  status          TransactionStatus @default(COMPLETED)
+  amount          Decimal           @db.Decimal(18, 2)
+  currency        String            @default("PKR")
+  balanceAfter    Decimal           @db.Decimal(18, 2)
+  description     String?
+  metadata        Json?
+  externalRef     String?
+  referenceId     String?           // ad watch / referral / deposit / withdrawal / mission id
+
+  createdAt       DateTime          @default(now())
+
+  @@index([userId, createdAt])
+  @@index([walletId, createdAt])
+  @@index([type])
+  @@index([status])
+  @@index([referenceId])
+}
+
+// ==========================================
+// ============== Daily Quiz Reward =========
+// ==========================================
+//
+// Replaces the legacy ad-watching feature. Each day the user is shown
+// one easy multiple-choice question (Roman Urdu / Islamic / Pakistan /
+// general knowledge / adab). A correct answer credits the daily reward;
+// a wrong answer locks the next attempt for 24 hours.
+
+model QuizQuestion {
+  id            String         @id @default(cuid())
+  category      QuizCategory
+  question      String
+  options       String[]       // 2-4 answer options
+  correctIndex  Int            // 0-based index of the correct option
+  explanation   String?        // shown after the answer is revealed
+  difficulty    Int            @default(1) // 1 (easy) - 5 (hard)
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  attempts      QuizAttempt[]
+
+  @@index([category, active])
+  @@index([difficulty])
+}
+
+model QuizAttempt {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      QuizQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  pickedIndex   Int
+  correct       Boolean
+  rewardAmount  Decimal?       @db.Decimal(18, 2)
+  rewardDay     String         // YYYY-MM-DD — used to enforce one attempt / day
+  ip            String?
+  deviceId      String?
+  createdAt     DateTime       @default(now())
+
+  @@unique([userId, rewardDay])      // hard 1-attempt-per-day guard
+  @@index([userId, createdAt])
+  @@index([questionId])
+}
+
+enum QuizCategory {
+  ISLAMIC
+  PAKISTAN
+  GENERAL
+  CURRENT
+  ADAB
+}
+
+// ==========================================
+// ============== Referral system ===========
+// ==========================================
+
+model Referral {
+  id          String   @id @default(cuid())
+  parentId    String
+  parent      User     @relation("RefParent", fields: [parentId], references: [id], onDelete: Cascade)
+  childId     String
+  child       User     @relation("RefChild", fields: [childId], references: [id], onDelete: Cascade)
+  level       Int      // 1, 2 or 3
+  rate        Decimal  @db.Decimal(5, 4) // 0.10, 0.05, 0.02
+  totalEarned Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt   DateTime @default(now())
+
+  @@unique([parentId, childId, level])
+  @@index([parentId, level])
+  @@index([childId])
+}
+
+// ==========================================
+// ============== Voice rooms ===============
+// ==========================================
+
+model VoiceRoom {
+  id            String              @id @default(cuid())
+  hostId        String
+  host          User                @relation("RoomHost", fields: [hostId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  category      String?
+  tags          String[]
+  status        VoiceRoomStatus     @default(LIVE)
+  visibility    VoiceRoomVisibility @default(PUBLIC)
+  passwordHash  String?
+  coverUrl      String?
+  maxSpeakers   Int                 @default(8)
+  isFeatured    Boolean             @default(false)
+  isPinned      Boolean             @default(false)
+  startedAt     DateTime?
+  endedAt       DateTime?
+  recordingUrl  String?
+  rtcRoomId     String?
+
+  participants  RoomParticipant[]
+  messages      RoomMessage[]
+  gifts         VoiceGift[]
+  reports       Report[]            @relation("RoomReports")
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([status, isFeatured])
+  @@index([category])
+  @@index([startedAt])
+}
+
+model RoomParticipant {
+  id         String     @id @default(cuid())
+  roomId     String
+  room       VoiceRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       VoiceRole  @default(LISTENER)
+  isMuted    Boolean    @default(false)
+  joinedAt   DateTime   @default(now())
+  leftAt     DateTime?
+  micRequestedAt DateTime?
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model RoomMessage {
+  id        String    @id @default(cuid())
+  roomId    String
+  room      VoiceRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  pinned    Boolean   @default(false)
+  replyToId String?
+  reactions Json?
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([roomId, createdAt])
+}
+
+model VoiceGift {
+  id          String   @id @default(cuid())
+  roomId      String
+  room        VoiceRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  fromUserId  String
+  fromUser    User     @relation("GiftSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId    String
+  toUser      User     @relation("GiftReceiver", fields: [toUserId], references: [id], onDelete: Cascade)
+  giftCode    String   // e.g. "rose","crown","diamond"
+  amount      Decimal  @db.Decimal(18, 2)
+  createdAt   DateTime @default(now())
+
+  @@index([roomId])
+  @@index([toUserId])
+}
+
+// ==========================================
+// ============== Deposits & Withdrawals ====
+// ==========================================
+
+model Deposit {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  method       DepositMethod
+  amount       Decimal       @db.Decimal(18, 2)
+  currency     String        @default("PKR")
+  txnRef       String        // user-provided transaction id
+  receiptUrl   String?
+  note         String?
+  status       DepositStatus @default(PENDING)
+  reviewerId   String?
+  reviewedAt   DateTime?
+  rejectionReason String?
+  createdAt    DateTime      @default(now())
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+model Withdrawal {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  method       WithdrawalMethod
+  amount       Decimal          @db.Decimal(18, 2)
+  fee          Decimal          @default(0) @db.Decimal(18, 2)
+  receiveAmount Decimal         @db.Decimal(18, 2)
+  currency     String           @default("PKR")
+  accountName  String
+  accountNumber String
+  status       WithdrawalStatus @default(PENDING)
+  externalRef  String?
+  reviewerId   String?
+  reviewedAt   DateTime?
+  rejectionReason String?
+  createdAt    DateTime         @default(now())
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+// ==========================================
+// ============== Notifications =============
+// ==========================================
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      NotificationKind
+  channel   NotificationChannel @default(IN_APP)
+  title     String
+  body      String?
+  url       String?
+  metadata  Json?
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+}
+
+// ==========================================
+// ============== Missions / Achievements ===
+// ==========================================
+
+model Mission {
+  id           String         @id @default(cuid())
+  code         String         @unique
+  title        String
+  description  String?
+  type         MissionType
+  goal         Int
+  rewardCash   Decimal        @default(0) @db.Decimal(18, 2)
+  rewardXp     Int            @default(0)
+  active       Boolean        @default(true)
+  startsAt     DateTime?
+  endsAt       DateTime?
+  metadata     Json?
+  userMissions UserMission[]
+  createdAt    DateTime       @default(now())
+}
+
+model UserMission {
+  id         String        @id @default(cuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  missionId  String
+  mission    Mission       @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  progress   Int           @default(0)
+  status     MissionStatus @default(ACTIVE)
+  completedAt DateTime?
+  claimedAt  DateTime?
+  createdAt  DateTime      @default(now())
+
+  @@unique([userId, missionId])
+  @@index([userId, status])
+}
+
+model Achievement {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  title       String
+  description String?
+  iconUrl     String?
+  rarity      String?          @default("common") // common, rare, epic, legendary
+  rewardXp    Int              @default(0)
+  rewardCash  Decimal          @default(0) @db.Decimal(18, 2)
+  users       UserAchievement[]
+  createdAt   DateTime         @default(now())
+}
+
+model UserAchievement {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement  @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  earnedAt      DateTime     @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+// ==========================================
+// ============== Community =================
+// ==========================================
+
+model Post {
+  id        String     @id @default(cuid())
+  authorId  String
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  imageUrl  String?
+  pinned    Boolean    @default(false)
+  comments  Comment[]
+  likes     PostLike[]
+  reports   Report[]   @relation("PostReports")
+  createdAt DateTime   @default(now())
+  deletedAt DateTime?
+
+  @@index([authorId, createdAt])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([postId, createdAt])
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followedId  String
+  followed    User     @relation("Followed", fields: [followedId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followedId])
+}
+
+// ==========================================
+// ============== Trust & Security ==========
+// ==========================================
+
+model FraudSignal {
+  id        String          @id @default(cuid())
+  userId    String?
+  user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  kind      FraudSignalKind
+  severity  FraudSeverity   @default(LOW)
+  score     Int             @default(0)
+  details   Json
+  resolved  Boolean         @default(false)
+  resolvedBy String?
+  createdAt DateTime        @default(now())
+
+  @@index([userId, severity])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  actorId   String?  // admin id when admin action
+  action    String
+  entity    String?
+  entityId  String?
+  ip        String?
+  userAgent String?
+  data      Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([actorId])
+  @@index([action])
+}
+
+model Report {
+  id           String           @id @default(cuid())
+  reporterId   String
+  reporter     User             @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType   ReportTargetType
+  targetUserId String?
+  targetRoomId String?
+  targetRoom   VoiceRoom?       @relation("RoomReports", fields: [targetRoomId], references: [id], onDelete: SetNull)
+  targetPostId String?
+  targetPost   Post?            @relation("PostReports", fields: [targetPostId], references: [id], onDelete: SetNull)
+  reason       String
+  details      String?
+  status       String           @default("OPEN") // OPEN, REVIEWED, RESOLVED, DISMISSED
+  createdAt    DateTime         @default(now())
+
+  @@index([reporterId])
+  @@index([targetType])
+}
+
+// ==========================================
+// ============== Settings & Banners ========
+// ==========================================
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model Announcement {
+  id        String    @id @default(cuid())
+  title     String
+  body      String
+  imageUrl  String?
+  pinned    Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt DateTime  @default(now())
+}
+
+// ==========================================
+// ============== Personal Chat (DMs) =======
+// ==========================================
+//
+// Direct, WhatsApp-style conversations between two (or more) users.
+// Each conversation has a `participantsKey` for fast lookup of an
+// existing 1:1 thread between two userIds.
+
+model Conversation {
+  id              String                    @id @default(cuid())
+  participantsKey String                    @unique // sorted "uA::uB" — fast 1:1 lookup
+  isGroup         Boolean                   @default(false)
+  title           String?                   // for group chats
+  imageUrl        String?
+  lastMessageAt   DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  participants    ConversationParticipant[]
+  messages        ChatMessage[]
+
+  @@index([lastMessageAt])
+}
+
+model ConversationParticipant {
+  id              String        @id @default(cuid())
+  conversationId  String
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt        DateTime      @default(now())
+  lastReadAt      DateTime?
+  muted           Boolean       @default(false)
+  archived        Boolean       @default(false)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id              String        @id @default(cuid())
+  conversationId  String
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId        String
+  sender          User          @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  body            String
+  attachmentUrl   String?
+  attachmentKind  String?       // "image" | "audio" | "video" | "file"
+  replyToId       String?
+  replyTo         ChatMessage?  @relation("ChatMessageReply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies         ChatMessage[] @relation("ChatMessageReply")
+  edited          Boolean       @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime      @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+// ==========================================
+// ============== Friends / Follow ==========
+// ==========================================
+//
+// `Follow` (already defined above) handles the social graph — anyone
+// can follow anyone. The "Friends" section in the app surfaces all
+// platform users sorted by `User.activityScore` and `lastActiveAt`.
