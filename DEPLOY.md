@@ -1,84 +1,57 @@
-# AdVerse Live — Deployment Guide (Hostinger shared hosting)
+# AdVerse Live — Deployment Guide (PHP + MySQL)
 
-The app is now a **fully static site** that runs entirely in the browser
-with **Firebase** as its backend. There is **no Node.js server** required.
+This repo now ships a **static Next.js front-end** plus a **PHP/MySQL REST API** backend.
+The front-end is built into `web/out/`, and the backend lives under `backend/api/`.
 
-That means you can upload it to Hostinger's cheapest **shared hosting**
-(`public_html`) — exactly like a plain HTML site — and everything works:
-signup, login, daily quiz, wallet, friends, chat, profile.
-
----
-
-## 1. Set up Firebase (free, no credit card)
-
-1. Go to <https://console.firebase.google.com> and create a project. Disable
-   Analytics if asked.
-2. **Build → Authentication → Get started → Sign-in method**:
-   - **Email/Password** → Enable → Save.
-   - **Google** → Enable → set the support email → Save.
-3. **Build → Firestore Database → Create database** → Start in **production**
-   mode → choose `asia-south1` (Mumbai) for best Pakistan latency → Enable.
-4. **Project Settings (gear icon) → General → "Your apps" → Web (`</>`)**.
-   Register an app called "AdVerse Web" (no hosting checkbox needed).
-   Copy the `firebaseConfig` values — these go into your `.env.local`.
-5. **Firestore → Rules** — paste the contents of `web/firestore.rules`
-   from this repo (the rules enforce per-user writes, one quiz attempt per
-   day, and per-conversation chat access).
-
-### Seed the question bank
-
-In Firestore Console **manually create** the following two documents:
-
-#### `settings/platform`
-
-```json
-{
-  "welcomeBonus": 10,
-  "dailyQuizReward": 30,
-  "minWithdraw": 200,
-  "refRates": { "l1": 0.1, "l2": 0.05, "l3": 0.02 }
-}
-```
-
-#### `quizQuestions/q1` (and as many as you like)
-
-```json
-{
-  "category": "ISLAMIC",
-  "question": "Roza kis mahine mein farz kiya gaya?",
-  "options": ["Rajab", "Shaban", "Ramazan", "Muharram"],
-  "correctIndex": 2,
-  "explanation": "Quran Pak mein Surah Al-Baqarah mein Ramazan ka zikr hai."
-}
-```
-
-Add 30+ questions covering ISLAMIC / PAKISTAN / GENERAL / ADAB categories.
-The app picks one per user per day deterministically.
+The recommended Hostinger setup is:
+- `public_html/` contains static files from `web/out/`
+- `public_html/backend/api/` contains the PHP API files
+- `backend/init/schema.sql` is used to create the MySQL schema and seed data
 
 ---
 
-## 2. Configure local env
+## 1. Configure the PHP API
+
+1. Copy `backend/api/config.php` and update it with your database settings.
+2. Create the MySQL database and user.
+3. Import `backend/init/schema.sql` into the database.
+
+The seeded admin credentials are:
+- **Email:** `admin@example.com`
+- **Password:** `Admin1234!`
+- **Dashboard URL:** `/admin`
+
+This gives you a working admin user immediately after the database is installed.
+
+---
+
+## 2. Configure the front-end environment
+
+In `web/.env.example` the API base is already set to:
+
+```ini
+NEXT_PUBLIC_API_BASE=/backend/api
+```
+
+Copy this file to `web/.env.local` and set your site URL:
 
 ```bash
 cd web
-cp .env.example .env.local
+copy .env.example .env.local
 ```
 
-Open `.env.local` and paste your Firebase keys:
+Then open `.env.local` and set:
 
 ```ini
-NEXT_PUBLIC_FIREBASE_API_KEY=AIza...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-NEXT_PUBLIC_FIREBASE_APP_ID=1:...:web:...
 NEXT_PUBLIC_SITE_URL=https://yourdomain.com
+NEXT_PUBLIC_API_BASE=/backend/api
 ```
+
+If you host the PHP backend under a different path, update `NEXT_PUBLIC_API_BASE` accordingly.
 
 ---
 
-## 3. Build the static site
+## 3. Build the front-end
 
 ```bash
 cd web
@@ -86,135 +59,71 @@ npm install
 npm run build
 ```
 
-This produces a `web/out/` folder containing the entire site as plain
-HTML/CSS/JS. Test it locally:
-
-```bash
-npx serve out -p 3000
-# open http://localhost:3000
-```
+That produces `web/out/`, which is the directory you upload to `public_html/`.
 
 ---
 
-## 4. Upload to Hostinger `public_html`
+## 4. Deploy to Hostinger
 
-The repo ships with a ready-made archive at the project root:
-**`adverse-live-public_html.zip`**. It contains every file from
-`web/out/` (including the `.htaccess`).
+### A. Static files
 
-### Option A — Hostinger File Manager (easiest)
+Upload the contents of `web/out/` into `public_html/`.
+Make sure `.htaccess` is included: it is already present inside `web/out/`.
 
-1. Log in to **hPanel → Hosting → Manage → File Manager → public_html**.
-2. Delete any default `index.html` / placeholder files inside
-   `public_html`.
-3. Click **Upload Files → Upload archive** and drop
-   `adverse-live-public_html.zip`.
-4. Right-click the uploaded archive → **Extract** → extract into the
-   current directory.
-5. Delete the `.zip` after extraction.
-6. Make sure **`.htaccess`** is visible (in File Manager → Settings →
-   "Show hidden files"). If it's missing, create it manually using the
-   contents of `web/public/.htaccess`.
+### B. PHP API
 
-### Option B — FTP (FileZilla)
+Upload the `backend/api/` directory to `public_html/backend/api/`.
+The API expects requests at `/backend/api/*.php` by default.
 
-1. **hPanel → Files → FTP Accounts** → note the host / user / password.
-2. In FileZilla, connect to that FTP host.
-3. On the right (server) navigate to `/public_html/`.
-4. On the left (local) navigate to `web/out/`.
-5. Select all files inside `out` (including `.htaccess` — enable
-   "View → Show hidden files" if you don't see it) and drag them into
-   `public_html`.
+### C. SQL schema
+
+Import `backend/init/schema.sql` into your MySQL database once.
+This creates the tables, seed data, and the admin test account.
 
 ---
 
-## 5. .htaccess — clean URLs, HTTPS, caching
+## 5. Accessing the site and admin
 
-A production-ready `.htaccess` is **already inside the build** — it sits
-in `web/public/.htaccess` and is automatically copied into `web/out/`
-during `npm run build`. After you extract `adverse-live-public_html.zip`
-into `public_html`, it's ready to go.
+After deployment:
+- Front-end: `https://yourdomain.com`
+- Admin dashboard: `https://yourdomain.com/admin`
 
-If for any reason `.htaccess` doesn't get extracted (some File Manager
-UIs hide dotfiles), create it manually with the contents of
-`web/public/.htaccess` from the repo.
+Use the seeded admin credentials above to test the admin dashboard immediately.
 
 ---
 
-## 6. Add Firebase authorized domain
+## 6. Updating the site later
 
-In Firebase Console:
-
-1. **Authentication → Settings → Authorized domains → Add domain**.
-2. Add `yourdomain.com` (and `www.yourdomain.com` if you use it).
-
-Without this, login/signup will fail with `auth/unauthorized-domain`.
-
----
-
-## 7. Updating the site later
-
-Whenever you change code:
+Whenever you change the UI or front-end code:
 
 ```bash
 cd web
 npm run build
 ```
 
-Then re-upload the contents of `web/out/` over the existing files in
-`public_html`. The `.htaccess` you created earlier doesn't need to be
-re-uploaded.
+Re-upload the updated contents of `web/out/` to `public_html/`.
+The backend PHP files only need to be re-uploaded if you change files under `backend/api/`.
 
 ---
 
-## 8. What's where
+## 7. Notes
 
-| Feature              | How it works on shared hosting                |
-|----------------------|-----------------------------------------------|
-| Signup / Login       | Firebase Auth (email + password)              |
-| User profile         | Firestore `users/{uid}` document              |
-| Daily quiz           | Firestore `quizQuestions` + `quizAttempts`    |
-| Wallet & history     | Firestore `users/{uid}.balance` + `transactions` |
-| Friends list         | Firestore `users` ordered by `lastActiveAt`   |
-| 1-on-1 chat          | Firestore `conversations/{id}/messages`       |
-| Welcome bonus        | Applied at signup transaction                 |
-| Referral code        | Stored on `users/{uid}.referralCode`          |
-| Static HTML          | `web/out/` uploaded to `public_html`          |
-
-No backend server, no database server, no cron jobs needed.
+- The front-end is still statically exported, but the app depends on a PHP API for auth, user data, quiz history, wallet, and friends functionality.
+- `backend/api/config.php` must be configured with your production database credentials.
+- If the PHP API is not reachable, the front-end will not be able to log in or load user data.
 
 ---
 
-## 9. Limitations & caveats
+## 8. Troubleshooting
 
-1. **All Firebase keys are public** (they're in the JS bundle). Security
-   relies on Firestore Rules — that's why `firestore.rules` is critical.
-2. **Quiz answers ship to the client** — a power user could read the
-   correct answer from network requests before submitting. For an MVP
-   this is acceptable; to fully hide answers you'd need Cloud Functions
-   (requires Firebase Blaze plan with billing — still has a free quota).
-3. **No SSR / no API routes** — anything that needed a server is now
-   client-side. Pages are pre-rendered as static HTML at build time and
-   hydrated in the browser.
+- **Login fails**: verify `NEXT_PUBLIC_API_BASE` points to the PHP API path and `backend/api/config.php` has valid DB credentials.
+- **Admin page denies access**: log in with `admin@example.com` and `Admin1234!`, then open `/admin`.
+- **404 errors on refresh**: make sure `.htaccess` is present in `public_html/`.
+- **Database errors**: import `backend/init/schema.sql` into MySQL and confirm the `users` table exists.
 
 ---
 
-## 10. Troubleshooting
+## 9. Deploy archive
 
-**Page shows blank / "Firebase configure nahi hua"** — your env vars
-aren't set in `.env.local` or you forgot to rebuild after changing them.
-
-**`auth/unauthorized-domain`** — add your domain in Firebase Console →
-Authentication → Settings → Authorized domains.
-
-**404 on every page after upload** — `.htaccess` is missing or
-`public_html` is empty. Re-extract `out.zip` and confirm `index.html`
-sits directly inside `public_html`.
-
-**`Missing or insufficient permissions`** — Firestore Rules are too
-strict or you didn't sign in. Make sure `firestore.rules` from the repo
-is the active rule set.
-
-**Quiz keeps repeating same question** — the daily question is picked
-deterministically from `quizQuestions`. Add more questions in Firestore
-to vary it.
+A deploy archive is included in the repository root named `adverse-live-deploy.zip`.
+It contains the static site output plus the PHP backend files needed for Hostinger deployment.

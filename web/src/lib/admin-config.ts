@@ -13,8 +13,8 @@
  * Comparison is case-insensitive.
  */
 export const ADMIN_EMAILS: ReadonlyArray<string> = [
-  "admin@blackgiftcard.shop",
-  "owner@blackgiftcard.shop",
+  "admin@example.com",
+  "admin@adverse.live",
 ];
 
 export function isAdminEmail(email?: string | null): boolean {

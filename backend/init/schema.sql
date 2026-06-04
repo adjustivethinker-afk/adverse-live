@@ -131,3 +131,7 @@ INSERT INTO `quiz_questions` (`id`, `category`, `question`, `options`, `correct_
 ('00000000-0000-0000-0000-000000000012', 'ISLAMIC', 'How many times a day do Muslims pray?', JSON_ARRAY('3', '4', '5', '6'), 2, 'Muslims pray five times daily.'),
 ('00000000-0000-0000-0000-000000000013', 'PAKISTAN', 'Which river is the longest in Pakistan?', JSON_ARRAY('Chenab', 'Jhelum', 'Indus', 'Ravi'), 2, 'The Indus River is the longest.'),
 ('00000000-0000-0000-0000-000000000014', 'ADAB', 'What is the proper greeting in Urdu for a gathering?', JSON_ARRAY('Hello', 'Salam Alaikum', 'Goodbye', 'Thank you'), 1, 'Salam Alaikum is the respectful greeting.');
+
+INSERT INTO `users` (`id`, `email`, `password_hash`, `full_name`, `display_name`, `username`, `phone`, `city`, `gender`, `level`, `xp`, `streak`, `balance`, `total_earned`, `pending`, `referral_code`, `referred_by`, `role`, `is_admin`, `status`, `joined_at`, `last_active_at`, `created_at`, `avatar_url`) VALUES
+('00000000-0000-0000-0000-000000000999', 'admin@example.com', '$2b$12$avRbHindR1NN35bLVWBIruW/L61lvfTD24FxdjsL1NmeB21rLx6UC', 'Site Admin', 'Admin', 'admin', NULL, NULL, 'male', 1, 0, 0, 1000.00, 1000.00, 0.00, 'ADMIN0001', NULL, 'ADMIN', 1, 'ACTIVE', NOW(), NOW(), NOW(), NULL)
+ON DUPLICATE KEY UPDATE `email` = VALUES(`email`);

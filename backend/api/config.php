@@ -7,7 +7,7 @@ if (!defined('DB_HOST')) {
     define('DB_NAME', 'game_db');
     define('DB_USER', 'db_user');
     define('DB_PASS', 'db_pass');
-    define('ADMIN_EMAILS', json_encode(['admin@example.com']));
+    define('ADMIN_EMAILS', json_encode(['admin@example.com', 'admin@adverse.live']));
     define('SITE_URL', '/');
     define('GOOGLE_CLIENT_ID', '');
     define('GOOGLE_CLIENT_SECRET', '');

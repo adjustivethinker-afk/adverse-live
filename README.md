@@ -1,31 +1,20 @@
-# AdVerse Live
+﻿# AdVerse Live
 
-> A simple, lightweight earning platform for Pakistan.
+> A lightweight earning platform with a static Next.js front-end and a PHP/MySQL backend.
 
-**Static-only Next.js + Firebase** — the entire app builds to plain
-HTML/CSS/JS that you can drop into Hostinger's `public_html` (or any
-shared hosting). No Node.js server, no database server, no cron jobs.
+This repository now supports a **static exported UI** plus a **PHP REST API** backend.
+The front-end builds into `web/out/`, while the backend API files are served from `backend/api/`.
 
 ---
 
-## What's inside
+## What’s inside
 
-- **Daily Quiz Reward** — one Roman Urdu question per day across Islamic,
-  Pakistan, general knowledge and adab categories. PKR 30 reward for
-  every correct answer; next try in 24 hours.
-- **3-level Referral Team** — invite friends and earn L1/L2/L3
-  commissions on their activity.
-- **Wallet** — balance, total earned, transactions, deposits and
-  withdrawals.
-- **Friends directory** — browse Pakistani users with online presence
-  driven by last-active heartbeats.
-- **1-on-1 chat** — realtime messaging over Firebase Firestore.
-- **Profile** — XP-based levels (New Member → Star User → Legend) and
-  streaks.
-- **Admin panel** — users, deposits, withdrawals, fraud, analytics.
-
-UI is in English. The daily quiz questions and explanations stay in
-Roman Urdu, since that's the way Pakistani users naturally play them.
+- **Daily Quiz Reward** — one question per day, selected from a seeded quiz bank.
+- **3-level Referral Team** — invite friends and earn bonus credit.
+- **Wallet** — view balance, total earned, pending withdrawals, and transaction history.
+- **Friends directory** — browse users by recent activity.
+- **Profile** — complete your profile and track XP and streaks.
+- **Admin dashboard** — admin-only analytics, user management, and moderation.
 
 ---
 
@@ -34,13 +23,11 @@ Roman Urdu, since that's the way Pakistani users naturally play them.
 | Layer        | Choice                                            |
 | ------------ | ------------------------------------------------- |
 | Framework    | Next.js 15 (App Router) — built with `output: "export"` |
-| Auth         | Firebase Auth (Email/Password + Google)           |
-| Database     | Firebase Firestore (free Spark plan)              |
-| UI           | Tailwind CSS, Framer Motion, Lucide icons         |
-| State        | Zustand                                           |
-| Hosting      | Hostinger shared hosting (`public_html`)          |
-
-The whole site is static HTML/CSS/JS in `web/out/` after `npm run build`.
+| Front-end    | Static export from `web/out/`                     |
+| API          | PHP REST endpoints in `backend/api/`              |
+| Database     | MySQL with schema in `backend/init/schema.sql`    |
+| UI           | Tailwind CSS, Zustand, Lucide icons               |
+| Hosting      | Hostinger shared hosting or any PHP/MySQL host    |
 
 ---
 
@@ -48,38 +35,60 @@ The whole site is static HTML/CSS/JS in `web/out/` after `npm run build`.
 
 ```bash
 cd web
-cp .env.example .env.local
-# Fill NEXT_PUBLIC_FIREBASE_* keys (see DEPLOY.md §1)
-
+copy .env.example .env.local
 npm install
-npm run dev          # http://localhost:3000
+npm run dev
 ```
+
+Open `http://localhost:3000` in your browser.
+
+---
 
 ## Build for deployment
 
 ```bash
 cd web
-npm run build        # produces web/out/ — upload to public_html
+npm run build
 ```
 
-See [`DEPLOY.md`](./DEPLOY.md) for the step-by-step Hostinger guide.
+This generates the static site in `web/out/`.
+
+---
+
+## Deployment
+
+1. Configure `backend/api/config.php` with your MySQL credentials.
+2. Import `backend/init/schema.sql` into your MySQL database.
+3. Upload the contents of `web/out/` to `public_html/`.
+4. Upload `backend/api/` to `public_html/backend/api/`.
+5. Set `NEXT_PUBLIC_API_BASE=/backend/api` in `web/.env.local` before building.
+
+The seeded admin credentials are:
+- **Email:** `admin@example.com`
+- **Password:** `Admin1234!`
+- **Admin dashboard:** `/admin`
 
 ---
 
 ## Project layout
 
 ```
+backend/
+├─ api/                  # PHP REST API endpoints
+└─ init/schema.sql       # MySQL schema + seed data
 web/
-├─ src/
-│  ├─ app/                # Next.js App Router pages (all client components)
-│  ├─ components/         # UI components (glass cards, buttons, etc.)
-│  └─ lib/
-│     ├─ firebase.ts      # Firebase init helpers
-│     ├─ firebase-db.ts   # Auth + Firestore data layer
-│     └─ store.ts         # Zustand store wired to Firebase Auth
-├─ firestore.rules        # Firestore security rules (paste into console)
-├─ next.config.mjs        # output: "export"
+├─ out/                  # Static export output after build
+├─ src/                  # Next.js source code
 ├─ .env.example
-└─ package.json
-DEPLOY.md                 # Hostinger deployment walkthrough
+├─ package.json
+├─ next.config.mjs
 ```
+
+---
+
+## Notes
+
+- The app is static on the front-end but requires PHP and MySQL for backend workflows.
+- `backend/api/config.php` must point to a working database and valid DB user.
+- If the API is unreachable, login and user data will fail.
+- The deploy package includes a static front-end plus PHP backend files.
