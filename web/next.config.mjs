@@ -11,6 +11,10 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
   },
+  // Prisma's binary engine must not be bundled into the client; mark it
+  // external for server components / route handlers so Vercel's serverless
+  // runtime ships it correctly.
+  serverExternalPackages: ["@prisma/client", "bcryptjs"],
 };
 
 export default nextConfig;

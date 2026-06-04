@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuroraBackground } from "@/components/fx/aurora";
 import { Toaster } from "sonner";
+import { SessionBoot } from "@/components/app/session-boot";
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || "https://adverse.live";
@@ -63,6 +64,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="font-sans antialiased text-white selection:bg-violet-500/40">
         <AuroraBackground />
+        <SessionBoot />
         <div className="relative z-10">{children}</div>
         <Toaster
           position="top-center"

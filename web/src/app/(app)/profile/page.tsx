@@ -25,6 +25,7 @@ import { useAuth, useQuiz } from "@/lib/store";
 import { PK_CITIES } from "@/lib/pk";
 import { formatPKR } from "@/lib/utils";
 import { toast } from "sonner";
+import { api } from "@/lib/api-client";
 
 const LEVELS = [
   { lvl: 1, name: "Naya Saathi", color: "from-slate-500 to-slate-700" },
@@ -76,17 +77,28 @@ export default function ProfilePage() {
     month: "long", year: "numeric",
   });
 
-  const onSave = () => {
+  const onSave = async () => {
     if (form.fullName.trim().length < 2) return toast.error("Naam likhein.");
     if (!/^[a-z0-9_]{3,20}$/i.test(form.username)) return toast.error("Username 3-20 chars, sirf letters/numbers/underscore.");
+    // Optimistic local update for snappy UX
     update({
       fullName: form.fullName,
-      username: form.username,
       gender: form.gender as "male" | "female",
       city: form.city,
     });
+    const res = await api("/api/users/me", {
+      method: "PATCH",
+      json: {
+        fullName: form.fullName,
+        city: form.city,
+      },
+    });
     setEditing(false);
-    toast.success("Profile update ho gayi.");
+    if (!res.ok) {
+      toast.error("Save nahi hua", { description: res.error.message });
+    } else {
+      toast.success("Profile update ho gayi.");
+    }
   };
 
   return (

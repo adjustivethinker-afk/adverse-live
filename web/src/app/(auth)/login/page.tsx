@@ -12,17 +12,22 @@ import { useAuth } from "@/lib/store";
 export default function LoginPage() {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const router = useRouter();
   const login = useAuth((s) => s.login);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) return toast.error("Username daalein.");
+    if (!identifier.trim()) return toast.error("Username, email, ya phone daalein.");
+    if (!password) return toast.error("Password daalein.");
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
-    login(username.trim());
+    const res = await login(identifier.trim(), password);
     setLoading(false);
+    if (!res.ok) {
+      toast.error("Login nahi hua", { description: res.error });
+      return;
+    }
     toast.success("Welcome back!", { description: "Apke dashboard par le ja rahe hain." });
     router.push("/dashboard");
   };
@@ -30,7 +35,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       title={<>Welcome <span className="text-gradient-neon">back.</span></>}
-      subtitle="Apne username se sign in karein."
+      subtitle="Username, email, ya phone se sign in karein."
       footer={
         <p className="text-center text-xs text-white/55">
           Naya account chahiye?{" "}
@@ -40,13 +45,13 @@ export default function LoginPage() {
     >
       <form className="space-y-4" onSubmit={onSubmit}>
         <Input
-          label="Username"
+          label="Username, email, ya phone"
           icon={<AtSign />}
-          id="username"
-          placeholder="aroush123"
+          id="identifier"
+          placeholder="aroush123  /  03xx xxxxxxx"
           autoCapitalize="none"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
           required
         />
         <Input
@@ -55,6 +60,8 @@ export default function LoginPage() {
           id="password"
           type={show ? "text" : "password"}
           placeholder="••••••••"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required
           trailing={
             <button type="button" onClick={() => setShow((s) => !s)} className="hover:text-white transition">

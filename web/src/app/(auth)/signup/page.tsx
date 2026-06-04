@@ -35,12 +35,15 @@ export default function SignupPage() {
     if (form.fullName.trim().length < 2) return toast.error("Apna poora naam likhein.");
     if (!/^[a-z0-9_]{3,20}$/i.test(form.username)) return toast.error("Username 3-20 characters, sirf letters/numbers/underscore.");
     if (!isValidPkPhone(form.phone)) return toast.error("Valid Pakistani number daalein (03xx xxxxxxx).");
-    if (form.password.length < 6) return toast.error("Password kam az kam 6 characters ka hona chahiye.");
+    if (form.password.length < 8) return toast.error("Password kam az kam 8 characters ka hona chahiye.");
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    signup(form);
+    const res = await signup({ ...form, referralCode: form.referralCode || undefined });
     setLoading(false);
+    if (!res.ok) {
+      toast.error("Account banane mein masla", { description: res.error });
+      return;
+    }
     toast.success("Mubarak! Account ban gaya.", { description: "PKR 10 ka welcome bonus apke wallet mein add ho gaya." });
     router.push("/welcome");
   };
